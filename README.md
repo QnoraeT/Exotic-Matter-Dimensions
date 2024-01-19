@@ -1,5 +1,8 @@
 # Exotic-Matter-Dimensions
 Exotic Matter Dimensions is an incremental game *loosely* based on Antimatter Dimensions.
+This is a mod of Exotic Matter Dimensions, made to be easier. (...?)
+I'm hoping I'll be able to consistently update with alongside the official relases.
+
 ## The Changelog of the Future
 ##### Content
 * Something which makes energy not affect things below 1
