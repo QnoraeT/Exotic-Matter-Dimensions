@@ -41,14 +41,24 @@ const HTPtexts = [
 		visibility:function(){return true},
 		paragraphs:[
 			"While not playing, you gain dilated time at a rate of 1 second of dilated time per second spent offline.",
-			"Dilated time can be used to Overclock the game. Overclock uses dilated time to accelerate production.{0}",
-			"Below a multiplier of {1}×, Overclock is equally efficient to playing online. However, above this threshold, the Overclock cost increases much quicker than the multiplier given, causing some dilated time to be wasted.",
+			"Dilated time can be used to Overclock the game. Overclock uses dilated time to accelerate production.{0}<br>Below a multiplier of {1}×, Overclock is equally efficient to playing online. However, above this threshold, the Overclock cost increases much quicker than the multiplier given, causing some dilated time to be wasted.",
+			"Time can also be frozen. While time is frozen, you will accumulate dilated time as if the game was closed, but you can still interact with it.",
+			"Finally, time can also be equalized. This will make all frames exactly 50 milliseconds long, removing randomness caused by factors like processor speed - any excess is added as further dilated time. This is useful for timed achievements such as 212.",
 			"{2}"
 		],
 		dynamics:[
 			()=>(g.stars>21||unlocked("Hawking Radiation"))?" Unlike tickspeed, the Overclock multiplier affects things like the 'real' time played.":"",
-			()=>dilationUpgrades[1].effect().toFixed(0),
+			()=>stat.overclockSoftcap.toFixed(0),
 			()=>g.dilationUpgradesUnlocked===0?"":"Later in the game, dilated time can also be spent on Dilation Upgrades, which improve Overclock in different ways."
+		]
+	},
+	{
+		name:"Tickspeed",
+		visibility:function(){return stat.tickspeed.neq(c.d1)},
+		paragraphs:[
+			"Tickspeed is a multiplier to how fast the game runs.",
+			"It affects all resources which are generated 'per second' - this is exotic matter, mastery power (including the timer), the W axis effect, dark matter, energy and so on.",
+			"It does not affect the 'time played' stat (although there is a separate statistic accounting for tickspeed) or anything which would make tickspeed hinder progress - for example, the timers for timed achievements such as 212."
 		]
 	},
 	{
@@ -64,7 +74,7 @@ const HTPtexts = [
 				["a ^^ b","Tetration"],
 				["slog","Superlogarithm"],
 				["Σ<span class=\"xscript\"><sup>4</sup><sub>1</sub></span>n","Summation: for example, Σ<span class=\"xscript\"><sup>4</sup><sub>1</sub></span>n<sup>2</sup> = "+[1,2,3,4].map(x=>"("+x+")<sup>2</sup>").join(" + ")+" = 30"],
-				["Π<span class=\"xscript\"><sup>4</sup><sub>1</sub></span>n","Product: for example, Π<span class=\"xscript\"><sup>4</sup><sub>1</sub></span>n<sup>n</sup> = "+[1,2,3,4].map(x=>"("+x+")<sup>"+x+"</sup>").join(" × ")+" = 27648"],
+				["Π<span class=\"xscript\"><sup>4</sup><sub>1</sub></span>n","Product: for example, Π<span class=\"xscript\"><sup>4</sup><sub>1</sub></span>n<sup>n</sup> = "+[1,2,3,4].map(x=>"("+x+")<sup>("+x+")</sup>").join(" × ")+" = 27648"],
 				["Ξ<sup>[x]</sup>n","Iterated exponentiation: for example, Ξ<sup>[2]</sup>3 = 10<sup>10<sup>3</sup></sup>"]
 			])
 		],
@@ -240,7 +250,7 @@ const HTPtexts = [
 		visibility:function(){return unlocked("Luck")},
 		paragraphs:[
 			"Once you complete Study VII, you will start generating luck shards.",
-			"These luck shards can be used to buy runes - there are three types of rune.",
+			"These luck shards can be used to buy runes - you start with only trifolium available, but unlock more types over time.",
 			"Each type of rune can be spent on refundable luck upgrades."
 		]
 	},
@@ -249,7 +259,7 @@ const HTPtexts = [
 		visibility:function(){return unlocked("Prismatic")},
 		paragraphs:[
 			"Once you buy research 20-8, you will generate prismatic based on all your lumen types.",
-			"You can spend this Prismatic on Prismatic Upgrades. Most Prismatic Upgrades work like normal upgrades - however, a few have a negative effect in addition to their positive one. These can be refunded, but you will not get spent prismatic back."
+			"You can spend this Prismatic on Prismatic Upgrades. Most Prismatic Upgrades work like normal upgrades - however, a few have a negative effect in addition to their positive one. These can be refunded."
 		]
 	},
 	{

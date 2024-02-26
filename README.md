@@ -7,11 +7,9 @@ I'm hoping I'll be able to consistently update with alongside the official relas
 ##### Content
 * Something which makes energy not affect things below 1
 * Achievements:
-	* All Study research at once
 	* Go from galaxy 0 to X without assigning stars
   * "Axistential Dread"
 ##### High priority
-* Unheadered tables (previous prestige & statistics)
 ##### Upper medium priority
 ##### Lower medium priority
 * Time in Wormhole reset shown in resources

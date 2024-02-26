@@ -811,6 +811,7 @@
 			if (Decimal.lt(value,start)) return N(value);
 			value=value.layerplus(-layer);
 			start=start.layerplus(-layer);
+			if (value.div(start).ln().mul(power).lt(c.em10)) {return value.layerplus(layer)}
 			return value.div(start).ln().mul(power).add(1).root(power).mul(start).layerplus(layer);
 		};
 
@@ -2111,6 +2112,10 @@
 			{
 				return Decimal.iteratedlog(payload, this, -height);
 			}
+
+			// alemaninc code start
+			if ((this.layer > Number.MAX_SAFE_INTEGER) || (height > Number.MAX_SAFE_INTEGER)) {return FC_NN(this.sign, this.layer + height, 1e10);}
+			// alemaninc code end
 			
 			payload = D(payload);
 			var oldheight = height;
@@ -2948,7 +2953,10 @@ function deepFreeze(obj) {
 	return Object.freeze(obj);
 };
 const constant = deepFreeze({
+	mmaxvalue	: Decimal.FC_NN(-1,Number.MAX_VALUE,1e10),
+	mminvalue	: Decimal.FC_NN(-1,Number.MAX_VALUE,-1e10),
 	d0				: Decimal.FC_NN(0,0,0),
+	minvalue	: Decimal.FC_NN(1,Number.MAX_VALUE,-1e10),
 	em30			: Decimal.FC_NN(1,1,-30),
 	em10			: Decimal.FC_NN(1,0,1e-10),
 	em5				: Decimal.FC_NN(1,0,1e-5),
@@ -2985,26 +2993,6 @@ Object.defineProperty(JSON,"validDecimal",{
 		return true;															// If all of the above tests were false, it's probably a Decimal.
 	}
 })
-const o = {			// o = "operations"
-	add(variable,value) {
-		g[variable]=g[variable].add(value).fix(0);
-	},
-	sub(variable,value) {
-		g[variable]=g[variable].sub(value).fix(0);
-	},
-	mul(variable,value) {
-		g[variable]=g[variable].mul(value).fix(1);
-	},
-	div(variable,value) {
-		g[variable]=g[variable].div(value).fix(1);
-	},
-	pow(variable,value) {
-		g[variable]=g[variable].pow(value).fix(1);
-	},
-	root(variable,value) {
-		g[variable]=g[variable].root(value).fix(1);
-	}
-};
 Object.defineProperty(Array.prototype,"sumDecimals",{value:function sumDecimals() {
 	return this.reduce((x,y) => x.add(y),c.d0);
 }})
