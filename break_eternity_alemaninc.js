@@ -881,6 +881,14 @@
 			return x.div(10).floor().pow10().mul([1,1.25,1.6,2,2.5,3.2,4,5,6.4,8][x.mod(10).toNumber()])
 		}
 
+		Decimal.fracDecibel_arithmetic = function(x) { // weighted arithmetic mean of two adjacent decibels
+			return Decimal.add(Decimal.decibel(x.floor()).mul(c.d1.sub(x.mod(c.d1))),Decimal.decibel(x.floor().add(c.d1)).mul(x.mod(c.d1)))
+		}
+
+		Decimal.fracDecibel_geometric = function(x) { // weighted geometric mean of two adjacent decibels
+			return Decimal.mul(Decimal.decibel(x.floor()).pow(c.d1.sub(x.mod(c.d1))),Decimal.decibel(x.floor().add(c.d1)).pow(x.mod(c.d1)))
+		}
+
 		Decimal.valid = function (x) {
 			return !Object.values(new Decimal(x)).includes(NaN)
 		}
@@ -2910,22 +2918,17 @@ for (var i = 0; i < 10; ++i)
 			return N(safeguard.slog(x)).slog_coefficient(x);
 		};
 
-		Decimal.prototype.aps = function(p) {
+		Decimal.prototype.aps = function(p) { // (x + 1) ^ p - 1 that works for low values
 			if (p.eq(1)) return this
 			if (this.mul(p).lt(1e-10)) return this.mul(p)
 			return this.add(1).pow(p).sub(1)
 		}
 
-		Decimal.prototype.format = function(precision) {
-			return BEformat(this,precision);
-		};
-
-		Decimal.prototype.noLeadFormat = function(precision) {
-			if (this.layer !== 0) return BEformat(this)
-			let exponent = this.abs().log10().add(1e-8).floor()
-			for (let i=0;i<precision;i++) if (Decimal.eq_tolerance(this.mul(Decimal.pow(10,i-exponent)),this.mul(Decimal.pow(10,i-exponent)).round(),1e-7)) return BEformat(this,i)
-			return BEformat(this,precision)
+		Decimal.prototype.alog = function(base=FC_NN(1,0,10)) { // log(x + 1) that works for low values
+			if (this.div(base.ln()).lt(1e-10)) return this.div(base.ln())
+			return this.add(1).log(base)
 		}
+
 		return Decimal;
 	}();
 
@@ -3009,7 +3012,29 @@ const notationSupport = {
 		if (x.lt(1000000)) return (Math.round(x.toNumber()*10**y)/10**y).toLocaleString("en-US");
 		functionError("formatSmall",arguments)
 	},
-	leadingEs:function(x){return x.layer-((x.mag<1e6)?1:0)}
+	leadingEs:function(x){return x.layer-((x.mag<1e6)?1:0)},
+	standard:{
+		e0:["","U","D","T","Qa","Qt","Sx","Sp","O","N"],
+		e1:["","Dc","Vg","Tg","Qd","Qi","Se","St","Og","Nn"],
+		e2:["","Ce","Dn","Tc","Qe","Qu","Sc","Si","Oe","Ne"],
+		e3:["","MI","MC","NA","PC","FM","AT","ZP","YC","RN","QC"],
+		sequence:function(max,num){
+			let out = Array(11).fill(0)
+			for (let i=max;i>max-num;i--) {out[Math.max(0,Math.floor(i/3))]++}
+			out[Math.floor(max/3)]=3
+			return out
+		},
+		str:function(height,mag,prec){
+			let val = Math.floor((height/1e3**mag)%1e3)
+			let out = ""
+			for (let i=3-prec;i<3;i++) {out += this["e"+i][Math.floor((val/10**i)%10)]}
+			if (out!=="") {
+				if (out==="U") {out=""}
+				out+=this.e3[mag]
+			}
+			return out
+		}
+	}
 }
 const notations = {
 	"Alemaninc Ordinal":function(x){
@@ -3024,12 +3049,12 @@ const notations = {
 		if (x.gte("eeeee6")) {return notations["Hyper-E"](x,sub)}
 		let leadingEs = notationSupport.leadingEs(x)
 		if (leadingEs===0) {x=x.mul(1.0000001);return x.log10().mod(constant.d3).pow10().toPrecision(p+1)+"e"+x.log10().div(constant.d3).floor().mul(constant.d3).toNumber().toLocaleString("en-US")}
-		return Array(leadingEs+1).join("e")+notations["Engineering"](x.layerplus(-leadingEs),sub,3)
+		return Array(leadingEs+1).join("e")+notations["Engineering"](x.layerplus(-leadingEs),sub,p+1)
 	},
-	"Hyper-E":function(x,sub="Hyper-E"){
+	"Hyper-E":function(x,sub="Hyper-E",p=3){
 		let height = Math.floor(x.slog().toNumber())
 		if (height>1e6) {return "E#"+notations[sub](N(height),sub)}
-		return "E"+((x.mag>=1e10)?Math.log10(Math.log10(x.mag)):Math.log10(x.mag)).toFixed(3)+"#"+height.toLocaleString("en-US")
+		return "E"+((x.mag>=1e10)?Math.log10(Math.log10(x.mag)):Math.log10(x.mag)).toFixed(p)+"#"+height.toLocaleString("en-US")
 	},
 	"Infinity":function(x,sub="Infinity"){
 		if (x.gte("eeeee6")) {return (Math.log2(x.quad_slog(constant.d10).toNumber())/1024).toFixed(6)+"Ω"}
@@ -3044,61 +3069,55 @@ const notations = {
 		if (x.gte("eeeee6")) return notations["Hyper-E"](x,sub)
 		let leadingEs = notationSupport.leadingEs(x)
 		if (leadingEs===0) {x=x.mul(1.0000001);return "e"+notationSupport.formatSmall(x.log10(),p)}
-		return Array(leadingEs+1).join("e")+notations["Logarithm"](x.layerplus(-leadingEs),sub,4)
+		return Array(leadingEs+1).join("e")+notations["Logarithm"](x.layerplus(-leadingEs),sub,p+1)
 	},
 	"Mixed scientific":function(x,sub="Mixed scientific",p=2){
 		if (x.gte("eeeee6")) {return notations["Hyper-E"](x,sub)}
 		let leadingEs = notationSupport.leadingEs(x)
 		if (leadingEs===0) {return notations[x.gte(constant.e33)?"Scientific":"Standard"](x,sub,p)}
-		return Array(leadingEs+1).join("e")+notations["Mixed scientific"](x.layerplus(-leadingEs),sub,3)
+		return Array(leadingEs+1).join("e")+notations["Mixed scientific"](x.layerplus(-leadingEs),sub,p+1)
 	},
 	"Scientific":function(x,sub="Scientific",p=2){
-		if (x.gte("eeeee6")) return notations["Hyper-E"](x,sub)
-		let leadingEs = notationSupport.leadingEs(x)
-		if (x.layerplus(-leadingEs).gte(constant.ee4)) {p--}
-		if (x.layerplus(-leadingEs).gte(constant.ee5)) {p--}
-		if (leadingEs===0) {x=x.mul(1.0000001);return x.log10().mod(constant.d1).pow10().mul(10**p).floor().div(10**p).toFixed(p)+"e"+x.log10().floor().toNumber().toLocaleString("en-US")}
-		return Array(leadingEs+1).join("e")+notations["Scientific"](x.layerplus(-leadingEs),sub,3)
+		if (x.gte("eeeee6")) return notations["Hyper-E"](x,sub);
+		let leadingEs = notationSupport.leadingEs(x);
+		let effp = p
+		if (x.layerplus(-leadingEs).gte(constant.ee4)) {effp--;}
+		if (x.layerplus(-leadingEs).gte(constant.ee5)) {effp--;}
+		if (leadingEs===0) {x=x.mul(1.0000001);return x.log10().mod(constant.d1).pow10().mul(10**effp).floor().div(10**effp).toFixed(effp)+"e"+x.log10().floor().toNumber().toLocaleString("en-US")}
+		return Array(leadingEs+1).join("e")+notations["Scientific"](x.layerplus(-leadingEs),sub,p+1)
 	},
 	"Standard":function(x,sub="Standard",p=2){
 		if (x.gte("eeeee6")) return notations["Hyper-E"](x,sub)
 		let leadingEs = Math.max(x.layer-((x.mag>=33)?1:2),0)    // standard notation adds leading e's at ee33 rather than ee6
 		if (leadingEs===0) {
-			if (x.lt(constant.e33)) return x.log10().mod(constant.d3).pow10().toPrecision(p+1)+" "+["M","B","T","Qa","Qt","Sx","Sp","Oc","No"][Math.floor(x.log10().toNumber()/3-2)]
-			let e0 = ["","U","D","T","Qa","Qt","Sx","Sp","O","N"]
-			let e1 = ["","Dc","Vg","Tg","Qd","Qi","Se","St","Og","Nn"]
-			let e2 = ["","Ce","Dn","Tc","Qe","Qu","Sc","Si","Oe","Ne"]
-			let e3 = ["QC-","RN-","YC-","ZP-","AT-","FM-","PC-","NA-","MC-","MI-",""] // reverse order
+			if (x.lt(constant.e33)) {return x.log10().mod(constant.d3).pow10().toPrecision(p+1)+" "+["M","B","T","Qa","Qt","Sx","Sp","Oc","No"][Math.floor(x.log10().toNumber()/3-2)];}
 			let height = x.log10().div(constant.d3).sub(constant.d1).floor().toNumber()
 			let e3vals = [10,9,8,7,6,5,4,3,2,1,0].map(x=>Math.floor((height/1e3**x)%1e3))
-			let firste3 = e3vals.map(x=>x>0).indexOf(true)
-			let out = ""
-			for (let i=firste3;i<Math.min(firste3+2,11);i++) {
-				if (e3vals[i]===0) continue;
-				let values = String(e3vals[i]).padStart(3,"0").split("")
-				if (e3vals[i]>1||i===10) out+=e0[values[2]]+e1[values[1]]+e2[values[0]]
-				out+=e3[i]
-			}
-			if (out.substring(out.length-1)==="-") {out = out.substring(0,out.length-1)}
-			if (height>=1e5) {out += "s"}
+			let out = []
+			let hp = p+2
+			let sequence = notationSupport.standard.sequence(Math.floor(Math.log10(height)),hp)
+			for (let i=10;i>=0;i--) {out.push(notationSupport.standard.str(height,i,sequence[i]))}
+			out = out.filter(x=>x!=="").join("-")
+			if (height>=10**hp) {out += "s"}
 			else {out = x.log10().mod(constant.d3).pow10().toPrecision(p+1)+" "+out}
 			return out
 		}
-		return Array(leadingEs+1).join("e")+notations["Standard"](x.layerplus(-leadingEs),sub,3)
+		return Array(leadingEs+1).join("e")+notations["Standard"](x.layerplus(-leadingEs),sub,p+1)
 	},
 	"Tetration":function(x,sub="Tetration"){
-		let height = x.slog()
-		if (height<1e6) {return "10 ⇈ "+height.toPrecision(6)}
-		return "10 ⇈ "+notations[sub](height,sub,5)
+		let height = x.quad_slog(c.d10)
+		if (height<1e6) {return "10 ⇈ "+height.toPrecision(7)}
+		return "10 ⇈ "+notations[sub](height,sub,6)
 	},
 	"Time":function(x){
 		let hours=x.mul(constant.e4).quad_slog().log(constant.d2).log(constant.d2).mul(constant.d2_4);
 		let minutes=hours.mod(constant.d1).mul(constant.d60)
 		let seconds=minutes.mod(constant.d1).mul(constant.d60)
-		return [hours,minutes,seconds].map(x=>x.floor().toString().padStart(2,"0")).join(":")
+		let milliseconds=seconds.mod(constant.d1).mul(constant.e3)
+		return [hours,minutes,seconds].map(x=>x.floor().toString().padStart(2,"0")).join(":")+"<sub>"+milliseconds.floor().toString().padStart(3,"0")+"</sub>"
 	}
 }
-function gformat(value,precision=0,notation="Scientific",subnotation=notation) {
+function gformat(value,precision=0,notation="Scientific",subnotation=notation,highPrecision=2) {
 	if ([value,precision,notation,subnotation].includes(undefined)) functionError("gformat",arguments)
 	let x=N(value);
 	if (x.sign===-1) return "-"+gformat(x.abs(),precision,notation,subnotation);
@@ -3108,35 +3127,7 @@ function gformat(value,precision=0,notation="Scientific",subnotation=notation) {
 	if (x.eq(constant.d0)) return "0";
 	if (x.lt(constant.em5)) return "(1 ÷ "+gformat(x.recip(),precision,notation,subnotation)+")";
 	if (x.lt(constant.e6)) return notationSupport.formatSmall(x,precision)
-	return notations[notation](x,subnotation)
-}
-function timeFormat(x) {
-	x = N(x);
-	if (x.eq(constant.d0)) return "0 seconds";
-	if (x.eq(Infinity)) return "Infinite time";
-	if (x.lt(constant.d0)) return "-"+timeFormat(x.neg())
-	if (x.lt(constant.em30)) return "(1 ÷ "+x.recip().noLeadFormat(2)+") seconds";
-	if (x.lt(constant.d1)) {
-		let exp = x.log10().div(constant.d3).neg().ceil();
-		let num = x.mul(constant.e3.pow(exp)).noLeadFormat(2)
-		let unit = ["milli","micro","nano","pico","femto","atto","zepto","yocto","ronto","quecto"][exp.toNumber()-1]+"second"+((num==="1")?"":"s");
-		return num+" "+unit;
-	}
-	if (x.lt(constant.d60)) return x.noLeadFormat(2)+" seconds";
-	if (x.lt(constant.d3600)) return x.div(constant.d60).digits(2)+":"+x.mod(constant.d60).digits(2);
-	if (x.lt(constant.d86400)) return x.div(constant.d3600).digits(2)+":"+x.div(constant.d60).mod(constant.d60).digits(2)+":"+x.mod(constant.d60).digits(2);
-	if (x.lt(constant.e9)) return x.div(constant.d86400).floor()+" day"+(x.gte(constant.d172800)?"s":"")+" "+x.div(constant.d3600).mod(constant.d24).digits(2)+":"+x.div(constant.d60).mod(constant.d60).digits(2)+":"+x.mod(constant.d60).digits(2);
-	return BEformat(x.div(constant.d31556926),2)+" years";
-}
-function rateFormat(x) {
-	x = N(x);
-	if (!Decimal.valid(x)) throw "Cannot access rateFormat("+x+")"
-	if (x.sign === 0) return "0 per second"
-	if (x.sign === -1) return "-"+rateFormat(x.neg())
-	if (x.eq(constant.d1)) return "1 per second"
-	if (x.gt(constant.d1)) return x.noLeadFormat(2)+" per second"
-	if (x.lt(constant.d1)) return "1 per "+timeFormat(x.recip())
-	throw "Cannot access rateFormat("+x+")"
+	return notations[notation](x,subnotation,highPrecision)
 }
 function decimalStructuredClone(obj) {
 	if (typeof obj === "object") {

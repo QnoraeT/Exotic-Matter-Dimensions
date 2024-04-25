@@ -20,10 +20,11 @@ const initSteps = [
 	}},
 	{function:function(){HTMLGenerator()}},
 	{function:function(){
-		d.innerHTML("span_currentVersion",version.current)
+		d.innerHTML("span_currentVersion",version.current+(betaActive?(" "+version.percentage()):""))
 		document.title="Exotic Matter Dimensions "+version.current+" by alemaninc"
 	}},
 	{function:function(){updateYellowLightCache();},onImport:true},
+	{function:function(){for (let i=0;i<2;i++) study13.updateRewardLevels()},onImport:true},
 	{function:function(){for (let tier of Object.keys(achievementList)) {achievement.perAchievementReward[tier].currentVal = achievement.perAchievementReward[tier].calc(achievement.ownedInTier(tier))}},onImport:true},
 	{function:function(){if (debugActive) {for (let stat of Object.keys(miscStats).filter(x=>x.type==="breakdown")) {for (let i=0;i<miscStats[stat].modifiers.length;i++) {if (miscStats[stat].modifiers[i]) error("stat."+stat+" modifier "+i+" has no <samp>show</samp> property")}}}}},
 	{function:function(){for (let i of Object.keys(miscStats)) statGeneration(i)}},
@@ -44,8 +45,10 @@ const initSteps = [
 	{function:function(){updateResearchTree()},onImport:true},
 	{function:function(){for (let i of Object.keys(research)){resizeResearch(i)}}},
 	{function:function(){generateResearchCanvas();},onImport:true},
-	{function:function(){updateAllStudyDivs();},onImport:true},
-	{function:function(){for (let i=0;i<8;i++) {
+	{function:function(){study13.renderTree()}},
+	{function:function(){for (let i of study13.allBindings){study13.resizeBinding(i)}}},
+	{function:function(){study13.updateBindingTree()},onImport:true},
+	{function:function(){for (let i=0;i<12;i++) {
 		d.element("axisAutobuyerMax"+axisCodes[i]).value=g.axisAutobuyerCaps[i];
 		d.element("darkAxisAutobuyerMax"+axisCodes[i]).value=g.darkAxisAutobuyerCaps[i];
 	};},onImport:true},
@@ -65,6 +68,11 @@ const initSteps = [
 	{function:function(){
 		openTab(g.activeTab)
 		for (let i of Object.keys(g.activeSubtabs)) openSubTab(i,g.activeSubtabs[i])
+	},onImport:true},
+	{function:function(){
+		for (let i=0;i<newsList.length;i++) {
+			d.innerHTML("newsline",newsList[i].text)
+			newsList[i].frequency = 1/(viewportWidth()+d.element("newsline").offsetWidth)}
 	}},
 	{function:function(){
 		updateHTML();

@@ -44,6 +44,9 @@
 			table-layout:fixed;
 			border-color:rgba(0,0,0,0);
 		}
+		td {
+			vertical-align:top;
+		}
 		</style>
 		<meta charset="utf-8"/>
 		<title>Changelog</title>
@@ -69,16 +72,125 @@ const contributors = {
 // Log entry format: [type, description, contributor (if applicable)]
 const logEntries = [
 	/*
-	next major:{num:"𝕍1ω",date:"",name:"Stellar Sect of Mathematical Wisdom 〜 Blobular Fusion",changes:[
-		["BALANCE","Achievement 712 \"Rewind\" now requires 3600 yellow lumens to be boosted (from 3500), but its reward starts at 36 (from 35). The end result is the same above 3600 yellow lumens."],
+	next major:
+	{num:"𝕍1ω",date:"",name:"Stellar Sect of Mathematical Wisdom 〜 Blobular Fusion",changes:[
+		["BALANCE","Research 9-2 now initially costs 360 Discoveries (previously 400), and the requirement is lower"],
+		["BALANCE","Row 9 Chromatic research are stronger (about 2× more chroma each)"],
+		["BALANCE","Achievement 607 \"There are Four Lights\" has a base reward of 2.75× (from 2.8×). Value once yellow light takes effect is unchanged."],
+		["BALANCE","Study IV has higher goals and unlock requirements"],
+		["BALANCE","Added a link to research 13-8 from 10-5 and 10-11"],
+		["BALANCE","Research 12-8 now has a base requirement of "+format(4800)+" Discoveries (from "+format(5250)+")"],
+		["BALANCE","Achievement 712 \"Rewind\" now requires "+format(3600)+" yellow lumens to be boosted (from "+format(3500)+"), but its reward starts at 36 (from 35). The end result is the same above 3600 yellow lumens."],
+		["BALANCE","Study of Studies rewards are significantly stronger"],
+		["BALANCE","Research 34-3 is stronger"],
 		["BUGFIX","Study of Studies now affects Achievement 604 \"Graduation\""],
-		["CONTENT","107 new research going up to row 47"]
+		["BUGFIX","Achievement 613 \"Antimatter Academia\" is now properly affected by yellow light and no longer affects 9-7, 9-8 or 9-9"],
+		["CONTENT","117 new research going up to row 47"],
 	]}
 	blank entry:
 	{num:"",date:"",changes:[
 
 	]},
 	*/
+	{num:"𝕍1.5(c).8",date:"2024-04-20",changes:[
+		["BUGFIX","Game crashing sporadically when Scientific notation is enabled"],
+		["TEXTFIX","\"Glow when anti-axis can be bought\" checking if this is enabled for dark axis"]
+	]},
+	{num:"𝕍1.5(c).7.1",date:"2024-04-18",changes:[
+		["BUGFIX","Game not loading due to a bug alemaninc knew would happen, but implemented anyway"],
+		"You ever wonder why so many people actually play this for fun?"
+	]},
+	{num:"𝕍1.5(c).7",date:"2024-04-18",changes:[
+		["BALANCE","Row 10 Chromatic research now require "+format("e8")+" of the relevant chroma (from "+format("e9")+"), and their formulas are stronger"],
+		["BUGFIX","Game doing strange things when frozen"],
+		["INTERFACE","Tetration notation now uses quadratic base 10 approximation rather than linear base 10, and Standard notation is less excessively precise"],
+		["QOL","Hotkey-triggered resets now correctly show confirmation popups if enabled"],
+		["TEXTFIX","Additional research from the 15-achievement Wormhole Milestone not appearing without reload"],
+		["TEXTFIX","Achievement 526 \"Big Crunch\" shows its progress correctly"],
+		["TEXTFIX","Review of yellow light effects in 'Light' tab works properly now"],
+		["TEXTFIX","Removed all erroneous references to \"axes\". The rules of English do not apply in <i>Exotic Matter Dimensions</i> so the plural is \"axis\"."]
+	]},
+	{num:"𝕍1.5(c).6",date:"2024-04-03",changes:[
+		["BUGFIX","Game actually no longer crashes when viewing Achievement 505 \"Iron Will IV\" when it is fully completed under Iron Will conditions"],
+		["TEXTFIX","Galaxy effect unlock requirements no longer show as 2 higher than they should be"],
+		["WHAT","The 1.5(c).5 changelog no longer has two undefined items"]
+	]},
+	{num:"𝕍1.5(c).5",date:"2024-03-31",changes:[
+		["BUGFIX","Feature unlock no longer crashes the game"],
+		["INTERFACE","Locked prestige buttons are darker in color"],
+		["QOL","Clicking \"Complete Study\" will no longer exit the Study if it cannot be completed (use \"Abort Study\" for this)"],
+		["TEXTFIX","Achievement 711 \"Moonlight Capital\" should now display its milestones correctly"]
+	]},
+	{num:"𝕍1.5(c).4",date:"2024-03-31",name:"Nice and Fun Tier 8",changes:[
+		["BUGFIX","The game now loads once more"],
+		["SECRET","Removed the secret"]
+	]},
+	{num:"𝕍1.5(c).3.1",date:"2024-03-31",changes:[
+		["SECRET","Fixed the new promotion code"]
+	]},
+	{num:"𝕍1.5(c).3",date:"2024-03-31",name:"Nice and Fun Tier 9",changes:[
+		["INTERFACE","The 1st effect of dark stars now displays its formula"],
+		["INTERFACE","Complicated Study Bindings now display as lists for clarity, and the disclaimers for Study of Studies now show separately from the Binding"],
+		["INTERFACE","Very short news ticker messages are now shown less frequently"],
+		["SECRET","All-new promotion code!"],
+		["TEXTFIX","Permanent and Study research can no longer be 'powered'"],
+		["WHAT","Added 𝕍1.5(c).2's second INTERFACE"],
+		["WHAT","Changed 𝕍1.5(c).2's second TEXTFIX to include Achievements 708-710"]
+	]},
+	{num:"𝕍1.5(c).2",date:"2024-03-28",changes:[
+		["BUGFIX","Achievement 807 \"Get Lucky\" is no longer awarded by clicking the button if cannot afford"],
+		["BUGFIX?","Save import should cause less display bugs requiring refresh"],
+		["BUGFIX","Game no longer crashes when viewing Achievement 505 \"Iron Will IV\" when it is fully completed under Iron Will conditions"],
+		["INTERFACE","Resizing the window will no longer make achievements display weirdly"],
+		["INTERFACE","Very long news ticker messages are now shown less frequently"],
+		["TEXTFIX","Stardust Boost 1 always showing in Stat Breakdown even if Stardust is not unlocked"],
+		["TEXTFIX","Progress for Achievements 708-710 \"Mind-bending Curvature\" showing negative values and 714 \"Old age\" being completely broken"],
+		["TEXTFIX","Icons for stars 81 and 83 are no longer \"undefined<sup>-</sup>\" on Modern view"],
+		["TEXTFIX","Reviewing all yellow light effects will no longer show unchanged achievements if the next yellow lumen will boost them"]
+	]},
+	{num:"𝕍1.5(c).1",date:"2024-03-17",changes:[
+		["BUGFIX","Progress bar crashing when completing the achievement on it"],
+	]},
+	{num:"𝕍1.5(c)",date:"2024-03-16",name:"Ageless Sect of Mystic Patience 〜 Timewall Fission",changes:[
+		["BALANCE","Research 9-15 and 10-13 are 2× stronger. The first of a number of changes which will hopefully speed up Tiers 6 and 7."],
+		["BUGFIX","Something called 'Corruption' unlocking in Study VIII"],
+		["INTERFACE","The Mastery 105 icon now correctly uses a ★ instead of a S"],
+		["WHAT","Added the missing second bugfix to the 𝕍1.5(b).10 changelog"],
+		["WHAT","Completion percentage is no longer incorrectly 96%"]
+	]},
+	{num:"𝕍1.5(b).10",date:"2024-03-16",changes:[
+		["BUGFIX","\"Unassign Mastery\" is no longer covered by footer on modern Mastery style"],
+		["BUGFIX","Mastery toggle confirmation now works properly"]
+	]},
+	{num:"𝕍1.5(b).9",date:"2024-03-15",name:"Condensation",changes:[
+		["BUGFIX","Tabs no longer glow if a subtab which isn't unlocked yet glows"],
+		["INTERFACE","Study interface has been shaken up <i>again</i>, and a second style has been added"]
+	]},
+	{num:"𝕍1.5(b).8",date:"2024-03-12",name:"The Long-Awaited Tier 9 Preparations 〜 When?",changes:[
+		["ANTICIPATION GALORE","Clicking the progress bar for a hint of the next update now shows a completion percentage for it"],
+		["BUGFIX","Crash when buying research 3-6 with 2-6 but neither of 1-5 or 1-6 available"],
+		["BUGFIX","There is no longer a \"Show options\" in Previous Prestiges which crashes the game"],
+		["INTERFACE","The Study interface has been changed up dramatically"],
+		["INTERFACE","Third and fourth order tabs in the Stat Breakdown and 'Previous Prestiges' are less ugly"],
+		["INTERFACE","Input fields in the Automation tab are smaller"],
+		["INTERFACE","Effective dark stars and luck upgrade levels are now shown in the Stat Breakdown"],
+		["INTERFACE","Numbers which are very close to 1 (such as energy gain at very low tickspeeds) now display with more precision"],
+		"The above interface changes have all happened for a reason. Use this information as you will.",
+		["INTERFACE","Push notifications no longer go under Research buttons"],
+		["INTERFACE","Changelog row text is now top-aligned rather than center-aligned"],
+		["INTERFACE","Added some space between luck upgrade buttons"],
+		["INTERFACE","\"Overclock costs are much higher above <i>N</i>×\" text is no longer obscured by the Overclock buttons"],
+		["INTERFACE","Research 24-12 now uses the correct icon"],
+		["PERFORMANCE","Importing research or auto-restoring after a Study no longer lag the game out (performance is now the same as buying normally)"],
+		["QOL","The buttons to lose levels of 'Chromatic Overdrive' now change color if the chroma cost multiplier is above 1"],
+		["QOL","Milestone achievements can now be placed into the progress bar if not all milestones are unlocked"],
+		["TEXTFIX","The third reward of Study II no longer shows its reward as being double its true value (this is in fact an actual bug and not a text bug but alemaninc is too lazy to rebalance so you now get a useless Study reward :D)"],
+		["TEXTFIX","The dark star requirement now displays correctly when single buying is active"],
+		["TEXTFIX","All references to \"Mastery swap\" have been changed to \"Mastery unassignment\" which is more accurate"],
+		["TEXTFIX","Achievements 402-407 now correctly say \"Unlock the [number] type of energy\" instead of just \"unlock the [number]\""],
+		["TEXTFIX","Achievements 409-411 \"Time is relative\" now only show their own flavor texts instead of all three separated by commas"],
+		["TEXTFIX?","nicodium's newsletter now shows a different message if verification is completed with the relevant secret achievement already owned"]
+	]},
 	{num:"𝕍1.5(b).7",date:"2024-02-08",changes:[
 		["INTERFACE","Autobuyers now show their \"level\" in their boxes rather than in Hidden Statistics"],
 		["MISCELLANEOUS","'How to play' entry for Offline Time has been expanded"],

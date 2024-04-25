@@ -35,8 +35,8 @@ const subtabProperties = {
 	main:{
 		axis:{
 			glow:function(){
-				if (autobuyerMeta.interval("axis")===0.1&&g.axisAutobuyerOn) return false;
-				if (g.glowOptions.buyAxis) {for (let i=0;i<8;i++) {if (g.exoticmatter.gt(axisCost(axisCodes[i]))&&(stat.axisUnlocked>i)) {return true}}};
+				if ((autobuyerMeta.interval("axis")<=0.1)&&g.axisAutobuyerOn) return false;
+				if (g.glowOptions.buyAxis) {for (let i=0;i<12;i++) {if (g.exoticmatter.gt(axisCost(axisCodes[i]))&&(stat.axisUnlocked>i)) {return true}}};
 			}
 		},
 		masteries:{
@@ -63,9 +63,12 @@ const subtabProperties = {
 		darkMatter:{
 			visible:function(){return unlocked("Dark Matter")},
 			glow:function(){
-				if (autobuyerMeta.interval("darkAxis")===0.1&&g.darkAxisAutobuyerOn) return false;
-				if (g.glowOptions.buyDarkAxis) {for (let i=0;i<4+g.stardustUpgrades[0];i++) {if (g.darkmatter.gt(darkAxisCost(axisCodes[i]))) {return true}}};
-				if (g.glowOptions.gainDarkStar&&stat.totalDarkAxis.gte(stat.darkStarReq)) {return true};
+				if (g.stardustUpgrades[4]===0) {return false}
+				if ((autobuyerMeta.interval("darkAxis")>0.1)||(!g.darkAxisAutobuyerOn)) {
+					if (g.glowOptions.buyDarkAxis) {for (let i=0;i<4+g.stardustUpgrades[0];i++) {if (g.darkmatter.gt(darkAxisCost(axisCodes[i]))) {return true}}};
+					if (g.glowOptions.gainDarkStar&&stat.totalDarkAxis.gte(stat.darkStarReq)) {return true};
+				}
+				if ((StudyE(12)||study13.bound(275))&&g.glowOptions.study12&&g.exoticmatter.gt(studies[12].empowerment.req())) {return true}
 			}
 		},
 		energy:{
@@ -120,16 +123,19 @@ const subtabProperties = {
 		antimatter:{
 			visible:function(){return unlocked("Antimatter")},
 			glow:function(){
-				if (g.glowOptions.buyDarkAxis) {for (let i of axisCodes.filter(x=>antiAxisUnlocked(x))) {if (g.antimatter.gt(antiAxisCost(i))) {return true}}};
+				if (g.glowOptions.buyAntiAxis) {for (let i of axisCodes.filter(x=>antiAxisUnlocked(x))) {if (g.antimatter.gt(antiAxisCost(i))) {return true}}};
 				return false
 			}
 		},
 		wormholeUpgrades:{
-			visible:function(){return g.achievement[903]},
+			visible:function(){return g.achievement[903]||unlocked("Matrix")},
 			glow:function(){
-				if (g.glowOptions.buyWormholeUpgrade) {for (let i=1;i<13;i++) {if ((g.wormholeUpgrades[i]<wormholeUpgrades[i].max)&&g.hawkingradiation.gte(wormholeUpgrades[x].cost)) {return true}}}
+				if (g.glowOptions.buyWormholeUpgrade) {for (let i=1;i<13;i++) {if ((g.wormholeUpgrades[i]<wormholeUpgrades[i].max)&&g.hawkingradiation.gte(wormholeUpgrades[i].cost)) {return true}}}
 				return false
 			}
+		},
+		study13:{
+			visible:function(){return unlocked("Study XIII")}
 		}
 	},
 	achievements:{
@@ -204,9 +210,9 @@ const hotkeys = {
 		"Overclock":{baseKey:"KeyO",down:()=>setTimeState(1),visible:()=>true},
 		"Freeze time":{baseKey:"shift+KeyO",down:()=>setTimeState(2),visible:()=>true},
 		"Equalize time":{baseKey:"alt+KeyO",down:()=>setTimeState(3),visible:()=>true},
-		"Stardust reset":{baseKey:"KeyS",down:()=>attemptStardustReset(),visible:()=>unlocked("Stardust")||g.exoticmatter.gte(stat.stardustExoticMatterReq)},
+		"Stardust reset":{baseKey:"KeyS",down:()=>attemptStardustReset(true),visible:()=>unlocked("Stardust")||g.exoticmatter.gte(stat.stardustExoticMatterReq)},
 		"Force Stardust reset":{baseKey:"shift+KeyS",down:()=>stardustReset(),visible:()=>unlocked("Stardust")},
-		"Wormhole reset":{baseKey:"KeyW",down:()=>{if((g.activeStudy===0)||Decimal.gte(stat.totalDarkAxis,stat.wormholeDarkAxisReq)){attemptWormholeReset()}},visible:()=>unlocked("Hawking Radiation")||stat.totalDarkAxis.gte(stat.wormholeDarkAxisReq)},
+		"Wormhole reset":{baseKey:"KeyW",down:()=>{if((g.activeStudy===0)||Decimal.gte(stat.totalDarkAxis,stat.wormholeDarkAxisReq)){attemptWormholeReset(true)}},visible:()=>unlocked("Hawking Radiation")||stat.totalDarkAxis.gte(stat.wormholeDarkAxisReq)},
 		"Force Wormhole reset":{baseKey:"shift+KeyW",down:()=>wormholeReset(),visible:()=>unlocked("Hawking Radiation")},
 		"Show/hide formulas":{baseKey:"KeyF",down:()=>showFormulas=!showFormulas,visible:()=>true}
 	},
