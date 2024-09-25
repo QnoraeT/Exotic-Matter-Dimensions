@@ -99,6 +99,7 @@ const basesave = {
 	secretAchievement:Object.fromEntries(Object.keys(secretAchievementList).map(x=>[x,false])),
 	achievementIDShown:true,
 	completedAchievementTiersShown:true,
+	achievementTiersReversed:false,
 	clickedInStudy1:false,
 	StardustResets:0,
 	TotalStardustResets:0,
@@ -700,7 +701,7 @@ function masteryEffect(x) {
 	}
 	if (x===61) return Decimal.logarithmicSoftcap(g.masteryPower.add(c.d10).log10().pow(c.d0_1).sub(c.d1),c.d9,c.d2).mul(masteryBoost(61)).add(c.d1);
 	if (x===62) return Decimal.logarithmicSoftcap(g.masteryPower.add(c.d10).log10().pow(c.d0_04),c.d2,c.d1).pow(masteryBoost(62).neg());
-	if (x===63) return g.masteryPower.add(c.d1).log10().pow(c.d0_8).mul(masteryBoost(63));
+	if (x===63) return g.masteryPower.alog(c.d10).pow(c.d0_8).mul(masteryBoost(63));
 	if (x===71) return g.masteryPower.pow(c.d1_25).add(c.e10).log10().log10().pow(masteryBoost(71));
 	if (x===72) return Decimal.logarithmicSoftcap(g.masteryPower.pow(c.d1_25).add(c.e10).log10().log10().pow(c.d0_5).sub(c.d1),c.d1,c.d5).mul(masteryBoost(72)).add(c.d1);
 	if ([81,82,83,84].includes(x)) {
@@ -799,8 +800,9 @@ function masteryBoost(x) {
 	return b.fix(c.d0);
 }
 const percentableMasteries = [41,43,61,72,91,92] // masteries with effects that can be formatted as a percentage
-function masteryEffFormat(x) {
-	let precision = [52,62,85,101,105].includes(x)?3:2
+function masteryEffFormat(x,getPrec=false) {
+	let precision = [101].includes(x)?4:[52,62,85,105].includes(x)?3:2
+	if (getPrec) {return precision;}
 	let percentable = percentableMasteries.includes(x)
 	let func = [].includes(x)?"noLeadFormat":"format"
 	let eff = masteryEffect(x)
@@ -877,7 +879,7 @@ function masteryBaseText(x) {
 	if (x===72) return "Energy effects are {} stronger";
 	if ([81,82,83,84].includes(x)) return "Multiply mastery power gain by {} (based on "+["X axis","exotic matter","dark matter","stardust"][x-81]+")";
 	if (x===85) return "Add {} to the base mastery power gain exponent<br><span class=\"small\">(currently a "+stat.masteryTimer.pow(masteryEffect(85)).format(2)+"× multiplier)</span>";
-	if ([91,92].includes(x)) return "Row 8 masteries are {} stronger ("+["in","de"][x-91]+"creases over time)";
+	if ([91,92].includes(x)) return "Row 8 masteries are {} stronger ("+["in","de"][x-91]+"creases over time in this Stardust reset)";
 	if (x===101) return "The "+achievement.label(501)+" reward is raised to the power of {}"+(achievement(501).effectExp(false).eq(c.d1)?"":("<br><span class=\"small\">(if inactive: "+achievement(501).effectExp(false).format(3)+")</span>"));
 	if (x===102) return "Multiply Hawking radiation gain by {}";
 	if (x===103) return "Multiply knowledge gain by {}";
@@ -1320,7 +1322,7 @@ function starEffect(x) {
 		if (x===71) ef = g.masteryPower.pow(c.sqrt0_1).add(c.d10).log10().log10().mul(c.d22_5);
 		else if (x===72) ef = g.exoticmatter.fix(c.d0).add(c.d10).log10().log10().pow(c.d2).mul(c.d1_5);
 		else if (x===73) ef = g.stardust.add(c.d10).log10().log10().mul(c.d8);
-		else if (x===74) ef = g.truetimeThisStardustReset.add(c.d1).log10().mul(c.d7_5);
+		else if (x===74) ef = g.truetimeThisStardustReset.alog(c.d10).mul(c.d7_5);
 		ef=ef.mul(starBoosts[7].mult())
 		let lim = starBoosts[7].cap()
 		return Decimal.convergentSoftcap(ef,lim.mul(c.d0_75),lim);
@@ -1457,7 +1459,7 @@ function darkStarEffect1(x=stat.realDarkStars) {
 }
 function darkStarEffect3SoftcapInc() {	
 	let out = c.d10
-	if (g.achievement[803]) out = out.mul(c.d1_03)
+	if (g.achievement[803]) out = out.div(c.d0_97)
 	return out
 }
 function darkStarEffect3(x) {
@@ -1893,7 +1895,7 @@ const wormholeMilestone18 = {
 		let out = c.d3155692599 // 100 years
 		return out
 	},
-	eff:function(x=g.hawkingradiation){return Decimal.convergentSoftcap(x.add(c.d1).log10().pow(c.d1_5).mul(this.mult()),this.scstart(),this.sclim(),1);},
+	eff:function(x=g.hawkingradiation){return Decimal.convergentSoftcap(x.alog(c.d10).pow(c.d1_5).mul(this.mult()),this.scstart(),this.sclim(),1);},
 	formula:function(){
 		let out = "log(HR + 1)<sup>1.5</sup>"+formulaFormat.mult(this.mult())
 		return Decimal.gte(this.eff(),this.scstart())?("10<sup>log("+formulaFormat.convSoftcap(out,this.scstart().log10(),this.sclim().log10(),true)+")"):out
@@ -2033,7 +2035,10 @@ function studyRewardBoost(studyNum,rewardNum) {
 // Light
 function generateChroma(x,amount) {
 	let typesUnlocked = [0,3,6,8,9][lightTiersUnlocked()]
-	if (g.achievement[718]) for (let j=0;j<typesUnlocked;j++) g.chroma[j] = g.chroma[j].add(amount.div(c.e15)).max(c.d0) // prevent lag
+	if (g.achievement[718]) {
+		let val718 = [amount,c.d1.sub(stat.chromaCostMultiplier).max(c.d0),c.em15].productDecimals()
+		for (let j=0;j<typesUnlocked;j++) g.chroma[j] = g.chroma[j].add(val718).max(c.d0) // prevent lag
+	}
 	for (let i=0;i<100;i++) { // prevent infinite loop
 		let lowestChroma = g.chroma.reduce((x,y)=>x.min(y))
 		if (amount.lt(lowestChroma.max(stat.chromaPerSec).div(c.e15))) break
@@ -2204,7 +2209,7 @@ function reviewYellowLight(mode){    // 0 = next, 1 = all effects
 	shownAchievements = shownAchievements.sort((a,b)=>achPriority(b)-achPriority(a))
 	for (let x of shownAchievements) {
 		let colors = achievement.tierColors[achievement.tierOf(x)]
-		out.push("<div style=\"background-color:"+colors.primary+";color:"+colors.secondary+";height:60px;width:calc(60vw - 16px);border-style:solid;border-color:"+colors.secondary+";border-width:2px;border-radius:10px;margin:4px"+((achPriority(x)===0)?";filter:opacity(33%)":"")+"\">"+(achievement.visible(x)?("<table><tr><td style=\"width:300px;height:60px;\">"+x+"<br>"+achievement(x).name+"</td><td style=\"width:calc(60vw - 316px);height:60px;\">"+achievement(x).reward.replaceAll("{}",yellowLight.effectHTML(x,(mode===1||g.showLightEffectsFrom0)?c.d0:achievement(x).yellowValue,(mode===1||g.showLightEffectsFrom0)?achievement(x).yellowValue:achievement(x).nextYellowValue))+"</td></tr></table>"):("<table><tr><td style=\"height:60px\">[This achievement has not yet been revealed]</td></tr></table>"))+"</div>")
+		out.push("<div style=\"background-color:"+colors.primary+";color:"+colors.secondary+";height:60px;width:calc(60vw - 16px);border-style:solid;border-color:"+colors.secondary+";border-width:2px;border-radius:10px;margin:4px"+((achPriority(x)===0)?";filter:opacity(33%)":"")+"\">"+(achievement.visible(x)?("<table><tr><td style=\"width:225px;height:60px;\">"+x+"<br>"+achievement(x).name+"</td><td style=\"width:calc(60vw - 241px);height:60px;\">"+achievement(x).reward.replaceAll("{}",yellowLight.effectHTML(x,(mode===1||g.showLightEffectsFrom0)?c.d0:achievement(x).yellowValue,(mode===1||g.showLightEffectsFrom0)?achievement(x).yellowValue:achievement(x).nextYellowValue))+"</td></tr></table>"):("<table><tr><td style=\"height:60px\">[This achievement has not yet been revealed]</td></tr></table>"))+"</div>")
 	}
 	popup({
 		text:out.join(""),
@@ -2721,7 +2726,7 @@ const topResources = [
 		condition:function(){return StudyE(4);}
 	},
 	{
-		text:function(){return studies[6].name+" divisor: <span class=\"red\">"+studies[6].effect().noLeadFormat(3)+"</span>"},
+		text:function(){return studies[6].name+": ÷<span class=\"red\">"+studies[6].effect().noLeadFormat(3)+"</span>"},
 		condition:function(){return StudyE(6);}
 	},
 	{
@@ -2791,6 +2796,7 @@ const openConfig = (()=>{
 		"Achievement":function(){updateAchievementsTab();showConfigModal("Achievement",[
 			{text:"Achievement ID "+(g.achievementIDShown?"":"not ")+" shown",onClick:"toggle('achievementIDShown');for (let i of achievement.all){d.display('span_ach'+i+'ID',g.achievementIDShown?'inline-block':'none')}"},
 			{text:(g.completedAchievementTiersShown?"Show":"Hid")+"ing completed achievement tiers",onClick:"toggle('completedAchievementTiersShown')"},
+			{text:"Order of Achievement tiers "+(g.achievementTiersReversed?"":"not ")+"reversed",onClick:"toggle('achievementTiersReversed');d.innerHTML('achievementContainer',achievementContainer());"}
 		])},
 		"Stardust Boost":function(){showConfigModal("Stardust Boost",[
 			{text:"Stardust amount shown "+(g.topResourcesShown.stardust?"on top of screen":"in Stardust tab"),onClick:toggle("g.topResourcesShown.stardust")},
@@ -2860,7 +2866,7 @@ const progressMilestones = [
 		type:1,
 		get label(){return achievement.label(g.achOnProgressBar)+(g.achievement[g.achOnProgressBar]?(" milestone "+(achievement(g.achOnProgressBar).milestones()+1)):"")},
 		percent:function(){let p = achievement(g.achOnProgressBar).progress();return Array.isArray(p)?(p[0]/100):((typeof p)==="object")?((((typeof p.percent)==="number")?p.percent:p.percent[0])/100):undefined},
-		req:function(){let p = achievement(g.achOnProgressBar).progress();return ((typeof p)==="string")?p:Array.isArray(p)?(p[1].noLeadFormat(3)+" / "+p[2].noLeadFormat(3)):((typeof p)==="object")?p.text:""},
+		req:function(){let p = achievement(g.achOnProgressBar).progress();return ((typeof p)==="string")?p:Array.isArray(p)?(p[1].noLeadFormat(3)+" / "+p[2].noLeadFormat(3)):((typeof p)==="object")?(p.percent[1].noLeadFormat(2)+" / "+p.percent[2].noLeadFormat(2)+"; "+p.text):""},
 		get color(){return g.achievement[g.achOnProgressBar]?"#00cccc":"var(--achievements)"},
 		condition:function(){return g.achOnProgressBar==="N"}
 	},
@@ -3137,10 +3143,8 @@ function processImport(string) {
 	if (string.substring(0,34)==="AntimatterDimensionsSavefileFormat"&&string.substring(string.length-13)==="EndOfSavefile") {
 		addSecretAchievement(34)
 	} else {
-		try {
-			load(JSON.parse(atob(string)))
-			for (let i=0;i<initSteps.length;i++) if (initSteps[i].onImport??false) initSteps[i].function()
-		} catch {error("Invalid import")}
+		load(JSON.parse(atob(string)))
+		for (let i=0;i<initSteps.length;i++) if (initSteps[i].onImport??false) initSteps[i].function()
 	}
 }
 const promoCodeList = (()=>{
