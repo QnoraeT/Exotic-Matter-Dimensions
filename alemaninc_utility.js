@@ -41,6 +41,7 @@ function unbreak(str) {
 function arrowJoin(a,b) {return a+"&nbsp;→&nbsp;"+b}
 Object.defineProperty(Array.prototype,"remove",{
   value:function remove(item){
+		if (!this.includes(item)) {return this}
     let out = this
     out.splice(this.indexOf(item),1)
     return out
@@ -142,43 +143,23 @@ function roman(number) { // generates a roman numeral. Monospace fonts are recom
 	}
 	return out;
 }
-function dictionary(key,array) {
-	if (!(array instanceof Array)) crash("dictionary("+JSON.stringify(key)+","+JSON.stringify(array)+") has an invalid array")
-	try {return array[array.map(x => x[0]).indexOf(key)][1];} catch {functionCrash("dictionary",arguments)}
+function dictionary(key,dict) {
+	if ((typeof dict) !== "object") {functionCrash("dictionary",arguments)}
+	return dict[key]
 }
 function halfFunction(x) {
 	return (typeof x === "function")?x():x;
 }
-const numwordIllionsDictionary = ["thousand",...["m","b","tr","quadr","quint","sext","sept","oct","non"].map(x=>x+"illion"),...(()=>{
-	let out = []
-	for (let i=0;i<92;i++) out.push(["","un","duo","tre","quattuor","quin","sex","septem","octo","novem"][i%10]+["dec","vigint","trigint","quadragint","quinquagint","sexagint","septuagint","octogint","nonagint","cent"][Math.floor(i/10)]+"illion")
-	return out
-})()]
 function numword(num,precision=3) {
 	if (num===0) return "zero"
 	let out = (num>0?"":"minus ")
 	num=Math.abs(num)
-	// for 1-999
-	function smallInteger(x) {
-		let smallIntOutput = ""
-		if (x>99) {
-			smallIntOutput = ["one","two","three","four","five","six","seven","eight","nine"][Math.floor(x/100-1)]+" hundred"+(x%100===0?"":" and ")
-			x=x%100
-		}
-		if (x>19) {
-			smallIntOutput += ["twenty","thirty","forty","fifty","sixty","seventy","eighty","ninety"][Math.floor(x/10)-2]
-			if (x%10>0) smallIntOutput += "-"+["one","two","three","four","five","six","seven","eight","nine"][x%10-1]
-		} else if (x>0) {
-			smallIntOutput += ["one","two","three","four","five","six","seven","eight","nine","ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen"][x-1]
-		}
-		return smallIntOutput
-	}
 	let illionOut = []
 	for (let illion=101;illion>-2;illion--) {
 		let illionValue = 1e3**(illion+1)
 		let amount = Math.floor(num/illionValue)
 		if (amount>0) {
-			illionOut.push(smallInteger(amount)+(illion===-1?"":(" "+numwordIllionsDictionary[illion])))
+			illionOut.push(numword.smallInteger(amount)+(illion===-1?"":(" "+numword.illionsDictionary[illion])))
 			num -= amount*illionValue
 		}
 	}
@@ -189,6 +170,25 @@ function numword(num,precision=3) {
 		out+=" point "+decimals.map(x=>["zero","one","two","three","four","five","six","seven","eight","nine"][x]).join(" ")
 	}
 	return out
+}
+numword.illionsDictionary = ["thousand",...["m","b","tr","quadr","quint","sext","sept","oct","non"].map(x=>x+"illion"),...(()=>{
+	let out = []
+	for (let i=0;i<92;i++) out.push(["","un","duo","tre","quattuor","quin","sex","septem","octo","novem"][i%10]+["dec","vigint","trigint","quadragint","quinquagint","sexagint","septuagint","octogint","nonagint","cent"][Math.floor(i/10)]+"illion")
+	return out
+})()]
+numword.smallInteger = function(x) { // for 1-99
+	let smallIntOutput = ""
+	if (x>99) {
+		smallIntOutput = ["one","two","three","four","five","six","seven","eight","nine"][Math.floor(x/100-1)]+" hundred"+(x%100===0?"":" and ")
+		x=x%100
+	}
+	if (x>19) {
+		smallIntOutput += ["twenty","thirty","forty","fifty","sixty","seventy","eighty","ninety"][Math.floor(x/10)-2]
+		if (x%10>0) smallIntOutput += "-"+["one","two","three","four","five","six","seven","eight","nine"][x%10-1]
+	} else if (x>0) {
+		smallIntOutput += ["one","two","three","four","five","six","seven","eight","nine","ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen"][x-1]
+	}
+	return smallIntOutput
 }
 function pluralize(num,word,plural=word+"s") {
 	if (num===1) return "one "+word
@@ -233,7 +233,7 @@ function blackOrWhiteContrast(color) {
 function viewportHeight(){return window.innerHeight}
 function viewportWidth(){return window.innerWidth}
 const viewportDiagonalLength = Math.sqrt(viewportHeight()**2+viewportWidth()**2)
-function tableGenerator(array,tableStyle="",trStyle="",tdStyle="") {return "<table style=\""+tableStyle+"\">"+array.map(row=>"<tr style=\""+trStyle+"\">"+row.map(col=>"<td style=\""+tdStyle+"\">"+col+"</td>").join("")+"</tr>").join("")+"</table>"}
+function tableGenerator(array,tableStyle="",trStyle=tableStyle,tdStyle=trStyle,headers=true) {return "<table style=\""+tableStyle+"\">"+array.map((row,rowNum)=>"<tr style=\""+trStyle+"\">"+row.map(col=>"<t"+((headers&&(rowNum===0))?"h":"d")+" style=\""+tdStyle+"\">"+col+"</td>").join("")+"</tr>").join("")+"</table>"}
 function checkTypo(str1,str2){
 	let diff = 0
 	let f1 = checkTypo.wordFreq(str1)
@@ -321,3 +321,19 @@ const wordShift = {
 }
 function gradientText(text,gradient) {return "<span style=\"background:"+gradient+";-webkit-background-clip:text;-webkit-text-fill-color:transparent;\">"+text+"</span>"}
 function reverseChildren(parent){parent.append(...Array.from(parent.childNodes).reverse())}
+function alignTooltip(tooltip,parent) {
+	let rect = d.element(parent).getBoundingClientRect()
+	if ((rect.top===0)&&(rect.left===0)) { // the element has become invisible
+		d.element(tooltip).visibility = "hidden"
+		return
+	}
+	let elemX = (rect.left+rect.right)/2
+	let elemY = (rect.top+rect.bottom)/2
+	let rightAlign = (viewportWidth()<elemX*2)
+	let bottomAlign = (viewportHeight()<elemY*2)
+	let position = {top:"",bottom:"",left:"",right:""}
+	position[rightAlign?"right":"left"] = (rightAlign?(viewportWidth()-rect.left+4):(rect.right+4))+"px"
+	position[bottomAlign?"bottom":"top"] = (bottomAlign?(viewportHeight()-rect.top+4):(rect.bottom+4))+"px"
+	let info = d.element(tooltip).style
+	for (let i of Object.keys(position)) info[i] = position[i]
+}

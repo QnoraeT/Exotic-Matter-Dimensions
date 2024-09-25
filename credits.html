@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
+		<link rel="stylesheet" type="text/css" href="globalstyle.css" />
+		<style>
+.popupScreen {
+	position:fixed;
+	top:0px;
+	left:0px;
+	width:100vw;
+	height:100vh;
+	background-color:rgba(0,0,0,0.5);
+	display:none;
+	z-index:4;
+}
+.navigation {
+	height:20px;
+	background-color:#330066;
+	color:#ffffff;
+	border-style:solid;
+	border-width:2px;
+	border-color:#9933ff;
+}
+.popup {
+	position:fixed;
+	top:20vh;
+	left:20vw;
+	width:60vw;
+	height:60vh;
+	border-radius:24px;
+	background-image:radial-gradient(circle,#330066,#190033);
+	border-style:solid;
+	border-color:#330066;
+	border-width:3px;
+	z-index:4;
+	overflow:auto;
+	word-wrap:break-word;
+	padding:20px;
+	text-align:left;
+}
+h3, h4, h6 {
+	margin-top:2px;
+	margin-bottom:2px;
+}
+div, td {
+	vertical-align:top;
+}
+		</style>
+		<meta charset="utf-8"/>
+		<title>Credits</title>
+	</head>
+	<body>
+		Note that the credits are still being compiled, not everyone is in them yet.<br>If you have contributed but are not credited please contact alemaninc.<br><br>Click on a name to see that person's contributions.<br>Some changes are hidden if they would be a spoiler according to your current savefile.
+		<div id="navigation"></div>
+		<hr>
+		<div id="credits"></div>
+		<div id="div_fancyPopupScreen" class="popupScreen">
+			<div id="div_fancyPopup" class="popup">
+				<span id="span_fancyPopupText"></span>
+				<br>
+				<span id="span_fancyPopupButtons"></span>
+			</div>
+		</div>
+		<script type="text/javascript" src="alemaninc_utility.js"></script>
+		<script type="text/javascript" src="break_eternity_alemaninc.js"></script>
+		<script type="text/javascript" src="emd_utility.js"></script>
+		<script>
+const save = JSON.parse(localStorage.getItem("save"))
+const notation = (save===null)?"Mixed scientific":(save.notation??"Mixed Scientific")
+function format(x,p=0){return gformat(N(x),p,notation)}
+const EMDLevel = (save===null)?Infinity:(save.EMDLevel??Infinity)
+const specialGrade = {
+	"alemaninc":{class:"Ω",color:"#0000ff",title:"Lead Developer"},
+	"Celestial of Blob / hyperbolia":{class:"S+",color:"#fac112",title:"Absolute Celestial"},
+	"nicodium":{class:"S",color:"#4285f4",title:"Dual Celestial"},
+	"Stat Mark":{class:"S",color:"#00ffff",title:"Entropic Celestial"},
+	"xhwzwka":{class:"S",color:"#ff0000",title:"Enigmatic Celestial"}
+}
+function contributorColor(name){return (specialGrade[name]===undefined)?"inherit":specialGrade[name].color}
+/*
+Class descriptors:
+Ω		alemaninc
+S		Like alemaninc but not for alemaninc
+A		Massive impact
+B		Useful / impactful to most players
+C		Smaller addition
+D		Easter egg / extremely minor
+E		Totally pointless
+*/
+const classes = ["E","E+","D/E","D-","D","D+","C/D","C-","C","C+","B/C","B-","B","B+","A/B","A-","A","A+","S/A","S-","S","S+","Ω"]
+function classToScore(x){
+	if (x==="Ω"){return Infinity}
+	let pos = classes.indexOf(x)
+	return Math.exp(pos/Math.E)
+}
+function overallClass(arr) {
+	if (arr.length===0) {return "F"}
+	let total = arr.map(x=>classToScore(x)).reduce((a,b)=>a+b)
+	for (let i=classes.length-1;i>=0;i--) {if (total>=classToScore(classes[i])) {return classes[i]}}
+}
+const categories = {
+	"Special":"For those who allowed the game to exist",
+	"Disinsection Crew":"For those who found infestations of pesky bugs",
+	"Exowriter":"For those who fixed issues with text",
+	"Game Changer":"For those who altered the substance of the game",
+	"Scripter":"For those who wrote their contributions directly into the code",
+	"Stylist":"For those who tried to sort the interface out",
+	"Technician":"For those who helped out in miscellaneous ways",
+	"Village Elder":"For those who contributed to the community",
+	"Worldbuilder":"For those who added flair to the game"
+}
+function news(id,txt,lv,grd) {return {text:"#"+id+" \""+txt+"\"",EMDLevel:lv,class:grd}}
+function person(name){return "<button style=\"background-color:#000000;border-style:solid;border-width:1px;border-radius:10px;border-color:"+contributorColor(name)+";color:"+contributorColor(name)+";height:20px;\" onClick=\"showContributions('"+name+"')\">"+name+"</button>"}
+const contributions = {
+	// ![A-Z]
+	"10mart10":{
+		"Disinsection Crew":[
+			{text:"Pointed out Study V breaking the game",EMDLevel:6,class:"B/C"},
+			{text:"Pointed out research 6-9 not existing",EMDLevel:5,class:"D"}
+		]
+	},
+	// A
+	"Acamaeda":{
+		"Disinsection Crew":[
+			{text:"Identified one of many cases of the game simply not loading<br>(details: Weakened offline progress option trying to softcap a non-<code>Decimal</code>)",EMDLevel:1,class:"D"}
+		],
+		"Stylist":[
+			{text:"Suggested one of many Tier 5 color changes",EMDLevel:5,class:"C"}
+		]
+	},
+	"alemaninc":{
+		"Special":[
+			{text:"Put more than 25,000 lines of code into something which seems to work",EMDLevel:1,class:"Ω"}
+		]
+	},
+	"Alien714":{
+		"Disinsection Crew":[
+			{text:"Pointed out Wormhole automator breaking the game",EMDLevel:5,class:"C"}
+		]
+	},
+	"anothernobody":{
+		"Disinsection Crew":[
+			{text:"Research 6-9 not working",EMDLevel:5,class:"D"}
+		],
+		"Game Changer":[
+			{text:"Suggested \"Set Overclock to softcap start\"",EMDLevel:1,class:"B"}
+		]
+	},
+	"arsaes":{
+		"Game Changer":[
+			{text:"Suggested prestige confirmations",EMDLevel:2,class:"B"}
+		]
+	},
+	"Aym":{
+		"Game Changer":[
+			{text:"Suggested Previous Prestige records & build storage",EMDLevel:2,class:"B/C"}
+		]
+	},
+	// B
+	"badzad31(Davin)":{
+		"Disinsection Crew":[
+			{text:"Pointed out when alemaninc made Research invisible (shared with "+person("Dragonus")+", "+person("Hori")+" and "+person("Titus")+")",EMDLevel:5,class:"D"}
+		]
+	},
+	"bestfweinds":{
+		"Exowriter":[
+			{text:"Pointed out \"Mastery unassignmnet\"",EMDLevel:1,class:"E"}
+		]
+	},
+	"b<sub>la</sub>c<sub>k hole</sub>":{
+		"Disinsection Crew":[
+			{text:"\"You currently have Tier 5 achievements\"",EMDLevel:5,class:"D"}
+		],
+		"Exowriter":[
+			{text:"Identified the 𝕍1.1.16 entry having \"undefined\" as an entry",EMDLevel:1,class:"E"},
+			{text:"Pointed out \"the\" being misspelled as \"theu\" in the 𝕍1.3 entry's first BALANCE",EMDLevel:6,class:"E"}
+		],
+		"Village Elder":[
+			{text:"Added FredBoat to the Discord (does anyone even use this?)",EMDLevel:1,class:"E"},
+			{text:"Suggested the Discord #bot-commands channel (which no one seems to use either)",EMDLevel:1,class:"E"}
+		],
+		"Worldbuilder":[
+			{text:"Suggested the news ticker",EMDLevel:1,class:"B"}
+		]
+	},
+	"BlazetheGameYT":{
+		"Stylist":[
+			{text:"Suggested one of many Tier 5 color changes",EMDlevel:5,class:"C"},
+		],
+		"Worldbuilder":[
+			{text:"Suggested the name of Achievement 913 \"Axistential Dread\"",EMDLevel:9,class:"D"},
+		]
+	},
+	// C
+	"Celestial of Blob / hyperbolia":{
+		"Disinsection Crew":[
+			{text:"Identified that limited prismatic upgrades are not actually limited (shared with "+person("Orrery")+")",EMDLevel:8,class:"B"},
+			{text:"Identified Scientific notation not working.<br>How does alemaninc break what is literally the notation used by half the playerbase and release it to production?",EMDLevel:1,class:"C"},
+			{text:"Identified attempting to change the footer display crashing the game",EMDLevel:1,class:"C/D"},
+			{text:"Identified it being possible to have an amount of dilated time on the femtosecond level",EMDLevel:1,class:"D"}
+		],
+		"Exowriter":[
+			{text:"Suggested for "+person("Kaffe-work / IRAD")+" to add a comma in the changelog",EMDLevel:1,class:"E"}
+		],
+		"Game Changer":[
+			{text:"Suggested Study XI",EMDLevel:8,class:"B"},
+			{text:"Indirectly suggested Study of Studies having 4 different research",EMDLevel:8,class:"B/C"}
+		],
+		"Journalist":[
+			{text:"Inspired news item #326",EMDLevel:8,class:"E"}
+		],
+		"Scripter":[
+			{text:"Wrote one line of code to fix a bug critical to those at Level 8 endgame",EMDLevel:8,class:"C"}
+		],
+		"Stylist":[
+			{text:"Suggested Prismatic Upgrade refund button coloring",EMDLevel:8,class:"B"},
+			{text:"Suggested otification for completing all achievements in a tier",EMDLevel:1,class:"C"}
+		],
+		"Worldbuilder":[
+			{text:"Suggested ability to see previous story entries",EMDLevel:2,class:"C"},
+			{text:"Named the Ontological Triad",EMDLevel:8,class:"C"},
+			{text:"Contributed a blob",EMDLevel:1,class:"D"},
+			{text:"Suggested \"Wrong game?\" secret achievement",EMDLevel:1,class:"D"}
+		]
+	},
+	"Crystalflare":{
+		"Disinsection Crew":[
+			{text:"Identified that reverting the system clock breaks the game through negative tickspeed",EMDLevel:2,class:"E"}
+		]
+	},
+	// D
+	"disastranagant":{
+		"Disinsection Crew":[
+			{text:"Identified that Stardust resets triggered by dark stars do not give the full stardust reward",EMDLevel:3,class:"C"}
+		]
+	},
+	"Dragonayzer":{
+		"Disinsection Crew":[
+			{text:"Pointed out that there should be an option to turn off \"buy all previous research\"",EMDLevel:5,class:"C"}
+		]
+	},
+	"Dragonus":{
+		"Disinsection Crew":[
+			{text:"Pointed out when alemaninc made Research invisible (shared with "+person("badzad31(Davin)")+", "+person("Hori")+" and "+person("Titus")+")",EMDLevel:5,class:"D"}
+		]
+	},
+	"Dreamare":{
+		"Disinsection Crew":[
+			{text:"Identified Achievement 530 \"Big Bang\" being awarded early",EMDLevel:5,class:"B"}
+		],
+		"Game Changer":[
+			{text:"Suggested import and export of star loadouts",EMDLevel:2,class:"B/C"}
+		]
+	},
+	"Dremion":{
+		"Stylist":[
+			{text:"Suggested the layout of the header which was used throughout all of 𝕍1",EMDLevel:1,class:"A/B"}
+		]
+	},
+	"ducdat0507 / duducat":{
+		"Stylist":[
+			{text:"Suggested one of many Tier 5 color changes",EMDLevel:5,class:"D"}
+		]
+	},
+	// E
+	"Eris":{
+		"Disinsection Crew":[
+			{text:"Helped identify Study completions not registering when completing exactly on goal (shared with "+person("Northo")+")",EMDLevel:5,class:"C/D"}
+		]
+	},
+	"eytanz":{
+		"Game Changer":[
+			{text:"Suggested Overclock hotkeys",EMDLevel:1,class:"B/C"}
+		],
+		"Stylist":[
+			{text:"Suggested Mastery row reversal",EMDLevel:1,class:"B"},
+			{text:"Suggested rearrangement of first order tabs",EMDLevel:1,class:"D"}
+		]
+	},
+	// F
+	"FeynHS":{
+		"Disinsection Crew":[
+			{text:"Pointed out game being impossible to open if never played before (shared with "+person("Lanie Carmelo")+" and "+person("reshrom")+")",EMDLevel:1,class:"C/D"}
+		]
+	},
+	"FIQ":{
+		"Exowriter":[
+			{text:"Pointed out that Achievement 501 \"Wormhole to Somewhere\" does not have a softcap like Wormhole Upgrade 5 \"More Achievement\" would suggest<br>(the softcap is actually on Mastery 101)",EMDLevel:8,class:"C"},
+			{text:"Pointed out one of many cases of Row 8 stars having incorrect icons when using the Modern interface",EMDLevel:2,class:"D"},
+			{text:"Pointed out that Achievement 302 \"Valence\" is not mentioned in the Stat Breakdown",EMDLevel:3,class:"D"},
+			{text:"Pointed out that Achievement 819 \"Power of a Unicorn\" has an incorrect formula",EMDLevel:8,class:"D"}
+		],
+		"Game Changer":[
+			{text:"Suggested reset automator settings that use previous gain rather than current amount",EMDLevel:5,class:"B"},
+			{text:"Suggested effective dark star text clarification",EMDLevel:5,class:"C"},
+			{text:"Suggested for Research 17-8 to make Time research show the unchanged effect",EMDLevel:8,class:"E"}
+		]
+	},
+	"FreeLancer":{
+		"Disinsection Crew":[
+			{text:"Identified the secret research achievement being awarded for buying any research",EMDLevel:5,class:"C/D"}
+		],
+		"Exowriter":[
+			{text:"Identified Stardust story entry showing that 0 stardust was produced",EMDLevel:2,class:"D"}
+		]
+	},
+	"Fusilliban":{
+		"Disinsection Crew":[
+			{text:"Identified game-breaking infinite galaxy bug",EMDLevel:7,class:"A/B"}
+		],
+		"Game Changer":[
+			{text:"Suggested research savings info",EMDLevel:8,class:"B"},
+			{text:"Suggested Achievement 815 \"Gensokyo Millennium\" reward (shared with "+person("sandwich8")+")",EMDLevel:8,class:"B/C"},
+		]
+	},
+	// G
+	"Gorn21":{
+		"Stylist":[
+			{text:"Suggested one of many chroma color changes",EMDLevel:6,class:"C"}
+		]
+	},
+	// H
+	"Hedrauta":{
+		"Scripter":[
+			{text:"Fixed multiple critical bugs when alemaninc was unavailable",EMDLevel:1,class:"A"},
+			{text:"Added Engineering notation",EMDLevel:1,class:"B"}
+		]
+	},
+	"hello.":{
+		"Disinsection Crew":[
+			{text:"Identified one of many cases of opening a specific tab crashing the game (in this case, 'Hidden Statistics')",EMDLevel:1,class:"D"}
+		]
+	},
+	"HollowX913":{
+		"Disinsection Crew":[
+			{text:"Identified Studies being impossible to complete if \"respec Research after Study\" is switched off",EMDLevel:5,class:"C"}
+		]
+	},
+	"Hori":{
+		"Disinsection Crew":[
+			{text:"Identified Studies being impossible to enter",EMDLevel:5,class:"C"},
+			{text:"Pointed out when alemaninc made Research invisible (shared with "+person("badzad31(Davin)")+", "+person("Dragonus")+" and "+person("Titus")+")",EMDLevel:5,class:"D"}
+		]
+	},
+	"Hyggyldy":{
+		"Game Changer":[
+			{text:"Suggested confirmation popup to assign Masteries",EMDLevel:1,class:"C"}
+		]
+	},
+	// I
+	"IKA":{
+		"Game Changer":[
+			{text:"Suggested achievements on the progress bar being impossible to fail",EMDLevel:1,class:"A/B"}
+		]
+	},
+	"imhoden":{
+		"Disinsection Crew":[
+			{text:"Identified Study V being impossible to abort even after "+person("WhattayaBrian")+" reported it",EMDLevel:6,class:"C"}
+		],
+		"Exowriter":[
+			{text:"Pointed out that \"Abort Study\" does not change to \"Complete Study\" when a goal is reached",EMDLevel:5,class:"D"}
+		]
+	},
+	"InfoHazard":{
+		"Disinsection Crew":[
+			{text:"Identified one of many cases of research loadouts not working correctly (this particular case is shared with "+person("lexicalpedant")+")",EMDLevel:5,class:"C/D"},
+			{text:"Identified Scientific notation <i>still</i> not working even after "+person("Celestial of Blob / hyperbolia")+" reported it",EMDLevel:5,class:"C"}
+		]
+	},
+	"Ingibergur":{
+		"Disinsection Crew":[
+			{text:"Identified Achievement 526 \"Big Crunch\" not awarding when buying single dark axis",EMDLevel:5,class:"B"}
+		]
+	},
+	"iota":{
+		"Disinsection Crew":[
+			{text:"Identified game breaking if Achievement 520 \"Rationing\" is acquired with less than 9 total Tier 5 achievements",EMDLevel:5,class:"B"}
+		]
+	},
+	// J
+	"jklw10":{
+		"Disinsection Crew":[
+			{text:"Identified star allocator always buying in numerical order regardless of configuration",EMDLevel:5,class:"B"},
+			{text:"Identified Stardust automator setting itself to an invalid setting when switched off (shared with "+person("themadvirus613tmv")+")",EMDLevel:5,class:"C/D"},
+			{text:"Identified the research build imported into a loadout counting towards the 40 character limit for the name",EMDLevel:5,class:"C/D"}
+		]
+	},
+	"johannarsakeio":{
+		"Disinsection Crew":[
+			{text:"Identified Star 42 not showing its multiplier",EMDLevel:2,class:"C/D"},
+			{text:"Identified Research 15-9 crashing the game on mouseover",EMDLevel:7,class:"C"}
+		]
+	},
+	// K
+	"kastark":{
+		"Technician":[
+			{text:"Made the <a href=\"https://kastark.co.uk/articles/incrementals.html\">tutorial</span> alemaninc used to get started",EMDLevel:1,class:"A"}
+		]
+	},
+	"Kaffe-work / IRAD":{
+		"Game Changer":[
+			{text:"Suggested ascetic research multi-buy",EMDLevel:8,class:"A/B"}
+		],
+		"Scripter":[
+			{text:"Added a comma in the changelog",EMDLevel:1,class:"E"}
+		],
+		"Village Elder":[
+			{text:"Named the Matrices",EMDLevel:10,class:"A"},
+		]
+	},
+	"Kyle Wand":{
+		"Game Changer":[
+			{text:"Suggested Study abortion without research respec",EMDLevel:5,class:"B"}
+		]
+	},
+	"kumamushi":{
+		"Disinsection Crew":[
+			{text:"Dark star bulk buy getting disabled on game load",EMDLevel:3,class:"C"},
+			{text:"Identified several of many cases of research loadouts not working correctly",EMDLevel:5,class:"B/C"},
+			{text:"One of many reports of unresponsive prestige buttons",EMDLevel:2,class:"D"}
+		],
+		"Exowriter":[
+			{text:"Pointed out \"Show Star/Mastery builds builds\"",EMDLevel:2,class:"D"}
+		],
+		"Game Changer":[
+			{text:"Suggested memory of which tabs were open when game was closed",EMDLevel:1,class:"B"},
+			{text:"Suggested single row Luck Upgrade respec",EMDLevel:8,class:"B"}
+		]
+	},
+	// L
+	"Lanie Carmelo":{
+		"Disinsection Crew":[
+			{text:"Pointed out game being impossible to open if never played before (shared with "+person("reshrom")+" and "+person("FeynHS")+")",EMDLevel:1,class:"C/D"}
+		],
+		"Game Changer":[
+			{text:"Suggested accessibility features for screen readers",EMDLevel:1,class:"B"}
+		]
+	},
+	"lexicalpedant":{
+		"Disinsection Crew":[
+			{text:"Identified one of many cases of research loadouts not working correctly (this particular case is shared with "+person("InfoHazard")+")",EMDLevel:5,class:"C/D"}
+		]
+	},
+	"Lulero":{
+		"Stylist":[
+			{text:"One of many Tier 5 color changes",EMDLevel:5,class:"D"}
+		]
+	},
+	// M
+	"Mark":{
+		"Disinsection Crew":[
+			{text:"Identified dark star bulk buy not working",EMDLevel:3,class:"C"}
+		]
+	},
+	"MaxFrost":{
+		"Stylist":[
+			{text:"Suggested display of footer in all tabs",EMDLevel:1,class:"A/B"}
+		]
+	},
+	"Mixelz":{
+		"Disinsection Crew":[
+			{text:"Helped make alemaninc see that half the game was basically unplayable for six months. Why was alemaninc in need of this in the first place?",EMDLevel:1,class:"A/B"}
+		]
+	},
+	"MundM2007":{
+		"Game Changer":[
+			{text:"Suggested access to Offline Time in Study I",EMDLevel:5,class:"B"}
+		]
+	},
+	// N
+	"nicodium":{
+		"Disinsection Crew":[
+			{text:"Research section of 'How to play' not showing anything",EMDLevel:5,class:"D"}
+		],
+		"Exowriter":[
+			{text:"Suggested a comma in the changelog",EMDLevel:1,class:"D"}
+		],
+		"Game Changer":[
+			{text:"Suggested Study completion without research respec",EMDLevel:5,class:"B"}
+		]
+	},
+	"Northo":{
+		"Disinsection Crew":[
+			{text:"Identified one of many cases of sudden, unexplainable <code>NaN</code>",EMDLevel:1,class:"E"},
+			{text:"Helped identify Achievement 505 \"Iron Will IV\" milestones only working when buying single dark axis",EMDLevel:5,class:"C"},
+			{text:"Helped identify Study completions not registering when completing exactly on goal (shared with "+person("Eris")+")",EMDLevel:5,class:"C/D"}
+		],
+		"Game Changer":[
+			{text:"Suggested Research loadouts",EMDLevel:5,class:"B"},
+			{text:"Suggested Previous Prestige last 10 (also the reason why the save segmenter is needed)",EMDLevel:2,class:"B"},
+			{text:"Suggested transfer of Stardust and Wormhole automators (shared with "+person("Tichat002")+")",EMDLevel:5,class:"C/D"}
+		],
+		"Stylist":[
+			{text:"Suggested collapse of finished achievement tiers",EMDLevel:1,class:"B"}
+		]
+	},
+	// O
+	"Orrery":{
+		"Disinsection Crew":[
+			{text:"Identified that limited prismatic upgrades are not actually limited (shared with "+person("Celestial of Blob / hyperbolia")+")",EMDLevel:8,class:"B"}
+		]
+	},
+	// P
+	"Pickle Rick Sanchez":{
+		"Disinsection Crew":[
+			{text:"Identified alemaninc Ordinal notation not working",EMDLevel:1,class:"C"},
+			{text:"Identified dark star bulk buy being impossible to switch off",EMDLevel:3,class:"C"}
+		]
+	},
+	"Prophetic Eclipse":{
+		"Game Changer":[
+			{text:"Indirectly suggested Wormhole Milestone 6",EMDLevel:5,class:"C"}
+		]
+	},
+	// Q
+	// R
+	"reshrom":{
+		"Disinsection Crew":[
+			{text:"Pointed out game being impossible to open if never played before (shared with "+person("FeynHS")+" and "+person("Lanie Carmelo")+")",EMDLevel:1,class:"C/D"}
+		]
+	},
+	"ResidualToast":{
+		"Disinsection Crew":[
+			{text:"Identified visual weirdness with Studies",EMDLevel:5,class:"C/D"}
+		],
+		"Game Changer":[
+			{text:"Indirectly suggested Achievement 817 \"The Knowing Existence\" reward",EMDLevel:8,class:"B"}
+		],
+		"Stylist":[
+			{text:"Suggested one of many Tier 5 color changes",EMDLevel:5,class:"C"},
+			{text:"Suggested one of many chroma color changes",EMDLevel:6,class:"C"}
+		]
+	},
+	"richlycn013":{
+		"Disinsection Crew":[
+			{text:"Described an issue with Achievement 524 \"Mastery is not a trivial monster\"",EMDLevel:5,class:"C"}
+		]
+	},
+	// S
+	"sandwich8":{
+		"Game Changer":[
+			{text:"Indirectly suggested Achievement 815 \"Gensokyo Millennium\" reward (shared with "+person("Fusilliban")+")",EMDLevel:8,class:"B/C"}
+		]
+	},
+	"sese müller":{
+		"Disinsection Crew":[
+			{text:"Pointed out Wormhole automator breaking the game, even after alemaninc ostensibly fixed it after "+person("Alien714")+" reported it",EMDLevel:5,class:"C"}
+		]
+	},
+	"Shinwmyste":{
+		"Disinsection Crew":[
+			{text:"Star allocator not working",EMDLevel:5,class:"C"}
+		]
+	},
+	"sino":{
+		"Disinsection Crew":[
+			{text:"Most recently unlocked Wormhole Milestone not showing"}
+		]
+	},
+	"Spacekiwi_":{
+		"Disinsection Crew":[
+			{text:"Identified \"Unassign Row <i>X</i> Masteries\" not working (shared with "+person("Tom")+")",EMDLevel:1,class:"C/D"}
+		]
+	},
+	"Spiral":{
+		"Disinsection Crew":[
+			{text:"Identified one of many cases of research loadouts buying the wrong research",EMDLevel:5,class:"D"}
+		]
+	},
+	"Stat Mark":{
+		"Special":[
+			{text:"Named the project",EMDLevel:1,class:"S"},
+		],
+		"Game Changer":[
+			{text:"Named the Wormholes",EMDLevel:5,class:"A"},
+			{text:"Suggested normal T axis effect",EMDLevel:2,class:"B"}
+		]
+	},
+	"Steiny":{
+		"Disinsection Crew":[
+			{text:"Identified one of many issues with Study V",EMDLevel:6,class:"B/C"},
+			{text:"Identified one of many cases of <code>NaN</code> galaxies",EMDLevel:7,class:"B/C"},
+			{text:"Identified save load not resetting lumen effects (as well as a host of other things)",EMDLevel:6,class:"C"}
+		]
+	},
+	"st0ck53y":{
+		"Scripter":[
+			{text:"Revealed that Achievement 801 was harmful.<br>(The pull request never did get accepted as alemaninc had to change the reward.)",EMDLevel:7,class:"A"}
+		]
+	},
+	// T
+	"Tarin":{
+		"Game Changer":[
+			{text:"Suggested special Wormhole reset confirmation when \"Iron Will\" is active",EMDLevel:5,class:"B/C"},
+			{text:"Suggested \"Tardis\" secret achievement",EMDLevel:1,class:"D"}
+		]
+	},
+	"themadvirus613tmv":{
+		"Disinsection Crew":[
+			{text:"Identified Stardust automator setting itself to an invalid setting when switched off (shared with "+person("jklw10")+")",EMDLevel:5,class:"C/D"},
+			{text:"Identified best prestige events showing default values when a prestige has not been done",EMDLevel:2,class:"D"}
+		]
+	},
+	"The Platinum Possum":{
+		"Disinsection Crew":[
+			{text:"Dark star autobuyer crashing game",EMDLevel:3,class:"C"}
+		]
+	},
+	"Tichat002":{
+		"Game Changer":[
+			{text:"Suggested totals for prestige resources in Statistics",EMDLevel:2,class:"B"},
+			{text:"Suggested greedy research multi-buy",EMDLevel:5,class:"A/B"},
+			{text:"Suggested transfer of Stardust and Wormhole automators (shared with "+person("Northo")+")",EMDLevel:5,class:"C/D"}
+		],
+		"Stylist":[
+			{text:"Suggested display of overall multiplier per dark U axis",EMDLevel:3,class:"D"},
+			{text:"Suggested one of many Tier 5 color changes",EMDLevel:5,class:"C"}
+		]
+	},
+	"Titus":{
+		"Disinsection Crew":[
+			{text:"Pointed out when alemaninc made Research invisible (shared with "+person("badzad31(Davin)")+", "+person("Dragonus")+" and "+person("Hori")+")",EMDLevel:5,class:"D"},
+			{text:"Pointed out the Discovery text always indicating that no discoveries are spent",EMDLevel:5,class:"C/D"}
+		]
+	},
+	"Tom":{
+		"Disinsection Crew":[
+			{text:"Identified one of many cases of <code>NaN</code> galaxies",EMDLevel:7,class:"B/C"},
+			{text:"Identified tickspeed overwriting chroma gain rather than multiplying it",EMDLevel:6,class:"B/C"},
+			{text:"Identified ray chroma showing up even when not unlocked if Research 11-8 is owned",EMDLevel:6,class:"C"},
+			{text:"Identified \"Unassign Row <i>X</i> Masteries\" not working (shared with "+person("Spacekiwi_")+")",EMDLevel:1,class:"C/D"},
+			{text:"News item #242 having an incorrect link",EMDLevel:1,class:"D/E"}
+		]
+	},
+	// U
+	// V
+	"Vexed":{
+		"Stylist":[
+			{text:"Suggested one of many Tier 5 color changes",EMDLevel:5,class:"C"}
+		]
+	},
+	// W
+	"Wexiity":{
+		"Stylist":[
+			{text:"Suggested display of total star amount",EMDLevel:5,class:"B"}
+		]
+	},
+	"WhattayaBrian":{
+		"Disinsection Crew":[
+			{text:"Identified certain Research not lighting up when purchasable",EMDLevel:5,class:"C"},
+			{text:"Identified Study V being impossible to abort",EMDLevel:6,class:"C"},
+			{text:"One of many reports of unresponsive prestige buttons",EMDLevel:2,class:"D"}
+		],
+		"Stylist":[
+			{text:"Suggested \"See all effects\" for yellow lumens",EMDLevel:6,class:"B"}
+		]
+	},
+	"Wong TingHo":{
+		"Disinsection Crew":[
+			{text:"Identified stardust exponents below "+format("2^-53")+" behaving like 0 regardless of the true value",EMDLevel:5,class:"C"}
+		],
+		"Exowriter":[
+			{text:"Suggested for "+person("Kaffe-work / IRAD")+" to add a comma in the changelog",EMDLevel:1,class:"E"}
+		],
+		"Stylist":[
+			{text:"Suggested white/black/gray chromas having very slightly different colors",EMDLevel:6,class:"B"}
+		]
+	},
+	// X
+	"xhwzwka":{
+		"Journalist":[
+			{text:"Wrote news item #267 (and later had to correct the part that was \"already formatted\" except it wasn't)",EMDLevel:1,class:"D"},
+		],
+		"Special":[
+			{text:"Made a JavaScript tutorial which alemaninc used",EMDLevel:1,class:"S"},
+			{text:"Informed alemaninc that <i>GitHub Pages</i> is a thing that exists",EMDLevel:1,class:"S"}
+		],
+		"Stylist":[
+			{text:"Suggested modern star UI",EMDLevel:2,class:"B"},
+			{text:"Pointed out that some research have incorrectly colored icons",EMDLevel:5,class:"D"}
+		]
+	}
+	// Y
+	// Z
+}
+function popup(data) {
+	d.display("div_fancyPopupScreen","inline-block")
+	d.innerHTML("span_fancyPopupText",data.text)
+	if (data.input !== undefined) d.element("span_fancyPopupText").innerHTML += "<br><textarea id=\"span_fancyPopupInput\" style=\"width:90%;height:40%\">"+data.input+"</textarea>"
+	d.innerHTML("span_fancyPopupButtons","")
+	for (let i of (data.buttons??[["Close",""]])) d.element("span_fancyPopupButtons").innerHTML += "<button onClick=\"d.display('div_fancyPopupScreen','none');"+i[1]+"\" class=\"genericbutton size3\">"+i[0]+"</button>"
+}
+function personClass(name){return (specialGrade[name]===undefined)?overallClass(Object.values(contributions[name]).map(x=>x.map(y=>y.class)).flat()):specialGrade[name].class}
+function showContributions(name) {
+	let out = "", counter = 1
+	for (let i of Object.keys(categories)) {if (contributions[name][i]!==undefined) {
+		out += "<h4 style=\"color:"+i.color+";\">"+i+"</h4><table>"
+		for (let j of contributions[name][i]) {
+			out += "<tr><td style=\"width:25px;padding-right:10px;text-align:right;color:"+i.color+";\">"+counter+"</td><td style=\"width:calc(60vw - 36px);text-align:left;color:"+i.color+";\">"+((j.EMDLevel>EMDLevel)?("<i>Reach EMD Level "+j.EMDLevel+" to reveal this</i>"):j.text)+"<span style=\"float:right;\">[Class "+j.class.replace("+","<sup>+</sup>").replace("-","<sup>-</sup>")+"]</span></td></tr>"
+			counter++
+		}
+		out += "</table>"		
+	}}
+	popup({
+		text:"<h3 style=\"color:"+(contributorColor(name)??"inherit")+";\">"+name+"'s Contributions <span style=\"float:right;\">[Overall Class "+personClass(name).replace("+","<sup>+</sup>").replace("-","<sup>-</sup>")+"]</span></h3><hr>"+out,
+		buttons:[["Close",""]]
+	})
+}
+function contributorSort(a,b){return ((Object.keys(specialGrade).includes(b)?1:0)-(Object.keys(specialGrade).includes(a)?1:0))||(a.toLowerCase()>b.toLowerCase())}
+function switchTab(name) {
+	let names = (name==="All")?Object.keys(contributions).sort(contributorSort):(name==="Special")?Object.keys(specialGrade):Object.keys(contributions).map(x=>[x,(contributions[x][name]===undefined)?"F":overallClass(contributions[x][name].map(x=>x.class))]).filter(x=>x[1]!=="F").map(x=>x[0]).sort(contributorSort)
+	d.innerHTML("credits",((name==="All")?"For all who helped to make <i>Exotic Matter Dimensions</i> a better game.":categories[name])+"<br><br>"+names.map(x=>"<div style=\"height:30px;width:300px;display:inline-block;color:"+contributorColor(x)+";\" onClick=\"showContributions('"+x+"')\">"+x+"</div>").join(""))
+	for (let i of ["All",...Object.keys(categories)]) {d.element("navigation_"+i).style.opacity = "0.6"}
+	d.element("navigation_"+name).style.opacity = "1"
+}
+function generateHTML() {
+	document.getElementById("navigation").innerHTML = ["All",...Object.keys(categories)].map(x=>"<button id=\"navigation_"+x+"\" class=\"navigation\" style=\"width:calc("+(100/(Object.keys(categories).length+1))+"vw - 3px);\" onClick=\"switchTab('"+x+"');\">"+x+"</button>").join("")
+	switchTab("All")
+}
+generateHTML()
+		</script>
+	</body>
+</html>

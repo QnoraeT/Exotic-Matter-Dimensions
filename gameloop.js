@@ -22,7 +22,7 @@ function updateHTML() {
 	d.element("button_stardustReset").style.visibility=(masteryData[42].req()?"visible":"hidden");
 	d.class("button_wormholeReset",stat.totalDarkAxis.gte(stat.wormholeDarkAxisReq)?"wormholeResetButton":"lockedStardustResetButton");
 	d.element("button_wormholeReset").style.visibility=(unlocked("Hawking Radiation")||stat.totalDarkAxis.gte(c.e3))?"visible":"hidden";
-	d.innerHTML("button_wormholeReset",wormholeResetButtonText());
+	updateWormholeResetButtonText()
 	d.display("footer",showFooter()?"inline-block":"none")
 	if (showFooter()) {
 		if (g.achOnProgressBar!=="N") {
@@ -30,6 +30,7 @@ function updateHTML() {
 			else {if (achievement(g.achOnProgressBar).milestones()===achievement(g.achOnProgressBar).maxMilestones) {g.achOnProgressBar="N"}}
 		}
 		ProgressBar()
+		d.innerHTML("span_footerEMDLevel",dictionary(g.EMDLevelDisplayInFooter,{0:"",1:" | EMD Level "+g.EMDLevel,2:" | EMD Level "+g.EMDLevel+" (Score "+BEformat(EMDScore())+")"}))
 	}
 	for (let tab of tabList) {
 		if (tabVisibility[tab]()) {
@@ -64,23 +65,16 @@ function updateHTML() {
 				d.display("button_"+type+"Axis",(stat.axisUnlocked>i)?"inline-block":"none");
 				if (stat.axisUnlocked>i) {
 					d.class("button_"+type+"Axis","axisbutton "+(corruption.list.axis.isCorrupted(type)?"corrupted":g.exoticmatter.gt(stat[type+"AxisCost"])?"available":"locked"));
-					if (Decimal.eq(g[type+"Axis"],stat["real"+type+"Axis"])) {
-						d.display("span_real"+type+"Axis","none")
-					} else {
-						d.display("span_real"+type+"Axis","inline-block")
-						d.innerHTML("span_real"+type+"Axis","Effective: "+stat["real"+type+"Axis"].noLeadFormat(3));
-					}
-					d.innerHTML("span_"+type+"AxisAmount",BEformat(g[type+"Axis"])+((stat["free"+type+"Axis"].gt(c.d0))?(" + "+stat["free"+type+"Axis"].noLeadFormat(2)):""));
+					d.innerHTML("span_"+type+"AxisAmount",BEformat(g[type+"Axis"])+((stat["free"+type+"Axis"].gt(c.d0))?(" + "+stat["free"+type+"Axis"].noLeadFormat(2)):"")+(Decimal.neq(Decimal.add(g[type+"Axis"],stat["free"+type+"Axis"]),stat["real"+type+"Axis"])?(" → "+stat["real"+type+"Axis"].noLeadFormat(2)):""));
 					d.innerHTML("span_"+type+"AxisEffect",stat[type+"AxisEffect"][miscStats[type+"AxisEffect"].from1?"formatFrom1":"noLeadFormat"](miscStats[type+"AxisEffect"].precision));
-					d.innerHTML("span_"+type+"AxisCost",BEformat(stat[type+"AxisCost"]));
+					d.innerHTML("span_"+type+"AxisCost",stat[type+"AxisCost"].format());
 				}
 			}
-			for (let name of empowerableAxis) {
+			for (let name of empowerableAxis.normal) {
 				d.display("button_empowered"+name+"Axis",stat["empowered"+name+"Axis"].gt(c.d0)?"inline-block":"none");
 				d.innerHTML("span_empowered"+name+"AxisAmount",stat["empowered"+name+"Axis"].noLeadFormat(2));
 			}
 		} else if (g.activeSubtabs.main==="masteries") {
-			showMasteryInfo(shownMastery,1)
 			for (let i of ["div","br"]) d.display(i+"_masteryPower_disabledTop",g.topResourcesShown.masteryPower?"none":"inline-block")
 			if (!g.topResourcesShown.masteryPower) {
 				d.innerHTML("span_masteryPower_disabledTop",g.masteryPower.format())
@@ -91,7 +85,7 @@ function updateHTML() {
 			if (g.masteryContainerStyle === "Legacy") {
 				for (let i of list) {
 					d.display("button_mastery"+i+"Legacy",(stat["masteryRow"+Math.floor(i/10)+"Unlocked"]&&((masteryData[i].req===undefined)?true:masteryData[i].req()))?"inline-block":"none")
-					d.element("button_mastery"+i+"Legacy").style["background-color"] = MasteryE(i)?"rgba(0,255,0,0.9)":"rgba(204,204,204,0.9)"
+					d.element("button_mastery"+i+"Legacy").className = "masteryButtonLegacy "+(MasteryE(i)?"active":"inactive")
 					d.innerHTML("span_mastery"+i+"BoostLegacy",masteryBoost(i).eq(c.d1)?"":(masteryBoost(i).mul(c.e2).noLeadFormat(3)+"%"))
 					d.innerHTML("span_mastery"+i+"ActiveLegacy",MasteryE(i)?"Active":"Inactive")
 					d.innerHTML("span_mastery"+i+"TextLegacy",masteryText(i))
@@ -99,11 +93,16 @@ function updateHTML() {
 			} else if (g.masteryContainerStyle === "Modern") {
 				for (let i of list) {
 					d.display("button_mastery"+i+"Modern",(stat["masteryRow"+Math.floor(i/10)+"Unlocked"]&&((masteryData[i].req===undefined)?true:masteryData[i].req()))?"inline-block":"none")
-					d.element("button_mastery"+i+"Modern").style["background-color"] = MasteryE(i)?"rgba(0,255,0,0.3)":"rgba(128,128,128,0.2)"
+					d.element("button_mastery"+i+"Modern").className = "masteryButtonModern "+(MasteryE(i)?"active":"inactive")
 					d.innerHTML("span_mastery"+i+"BoostModern",masteryBoost(i).eq(c.d1)?"":(masteryBoost(i).mul(c.e2).noLeadFormat(3)+"%"))
 					d.innerHTML("span_mastery"+i+"ActiveModern",MasteryE(i)?"Active":"Inactive")
 				}
-				d.element("masteryContainerModern").style["padding-bottom"] = d.element("masteryPanel").clientHeight+"px"
+				if (selections.mastery===undefined) {
+					d.element("masteryInfo").style.visibility = "hidden"
+				} else {
+					d.element("masteryInfo").style.visibility = "visible"
+					showMasteryInfo(selections.mastery)
+				}
 			} else {
 				g.masteryContainerStyle = "Legacy"
 			}
@@ -153,11 +152,11 @@ function updateHTML() {
 			}
 		} else if (g.activeSubtabs.main==="corruption") {
 			for (let i of corruption.all) {
-				if (corruption.list[i].visible()) {
+				if (corruption.unlocked(i)) {
 					d.display("div_corruption_"+i,"inline-block")
 					d.innerHTML("span_corruption_"+i+"_start",corruption.list[i].start().format())
 					d.innerHTML("span_corruption_"+i+"_power",corruption.list[i].power().mul(c.e2).noLeadFormat(3)+"%")
-					d.innerHTML("span_corruption_"+i+"_formula",corruption.formula(i))
+					d.innerHTML("span_corruption_"+i+"_formula",formulaFormat(corruption.formula(i)))
 				} else {
 					d.display("div_corruption_"+i,"none")
 				}
@@ -168,10 +167,22 @@ function updateHTML() {
 			d.innerHTML("colortheme",g.colortheme);
 			d.innerHTML("notation",g.notation);
 			d.innerHTML("toggleAutosave",g.autosaveIsOn?"On":"Off");
-			d.innerHTML("button_footerDisplay",dictionary(g.footerDisplay,[["All tabs","Showing footer in all tabs"],["Only Axis tab","Only showing footer in Axis tab"],["None","Hiding footer"]]))
+			d.innerHTML("button_footerDisplay",dictionary(g.footerDisplay,{"All tabs":"Showing footer in all tabs","Only Axis tab":"Only showing footer in Axis tab","None":"Hiding footer"}))
 			d.innerHTML("span_newsTickerActive",g.newsTickerActive?"en":"dis")
 			d.innerHTML("span_newsTickerSpeed",N(g.newsTickerSpeed).noLeadFormat(2))
-			d.innerHTML("span_newsTickerDilation",dictionary(g.newsTickerDilation,[[0,"None"],[0.0625,"Weak"],[0.125,"Moderate"],[0.1875,"Strong"],[0.25,"Extreme"]]))
+			d.innerHTML("span_newsTickerDilation",dictionary(g.newsTickerDilation,{"0":"None","0.0625":"Weak","0.125":"Moderate","0.1875":"Strong","0.25":"Extreme"}))
+			let doubleClickToBuy = [
+				["assign Mastery",unlocked("Masteries")&&(g.masteryContainerStyle==="Modern")],
+				["assign Star",unlocked("Stardust")&&(g.starContainerStyle==="Modern")],
+				["buy Research",unlocked("Hawking Radiation")]
+			].filter(x=>x[1]).map(x=>x[0])
+			if (doubleClickToBuy.length===0) {
+				d.display("button_options_doubleClickToBuy","none")
+			} else {
+				d.display("button_options_doubleClickToBuy","inline-block")
+				d.innerHTML("button_options_doubleClickToBuy","Double click to "+doubleClickToBuy.map(x=>unbreak(x)).join("/")+" "+(g.confirmations.doubleClickToBuy?"en":"dis")+"abled")
+			}
+			d.innerHTML("button_options_EMDLevelDisplayInFooter",dictionary(g.EMDLevelDisplayInFooter,{0:"EMD Level not shown in footer",1:"EMD Level shown in footer",2:"EMD Level and Score shown in footer"}))
 		} else if (g.activeSubtabs.options==="hotkeys") {
 			for (let name in hotkeys.hotkeyList) {
 				let hotkey = hotkeys.hotkeyList[name]
@@ -184,23 +195,21 @@ function updateHTML() {
 			}
 		}
 	} else if (g.activeTab==="statistics") {
-		if (g.activeSubtabs.statistics==="mainStatistics") {
-			for (let i=0;i<mainStatistics.length;i++) {
-				if (mainStatistics[i].condition()) {
-					d.tr("mainStatRow"+i,true);
-					d.innerHTML("mainStatValue"+i,mainStatistics[i].value());
-				} else {
-					d.tr("mainStatRow"+i,false);
-				}
-			}
-		} else if (g.activeSubtabs.statistics==="hiddenStatistics") {
-			for (let i=0;i<hiddenStatistics.length;i++) {
-				if (hiddenStatistics[i].condition()) {
-					d.tr("hiddenStatRow"+i,true);
-					d.innerHTML("hiddenStatValue"+i,hiddenStatistics[i].value());
-				} else {
-					d.tr("hiddenStatRow"+i,false);
-				}
+		if (g.activeSubtabs.statistics==="statistics") {
+			for (let i=0;i<statList.length;i++) {
+				let showCategory = false
+				for (let j=0;j<statList[i].entries.length;j++) {
+					if (statList[i].entries[j].visible()) {
+						showCategory = true
+						d.display("div_mainStat_"+i+"_"+j,"inline-block")
+						let txt = statList[i].entries[j].text()
+						for (let k=0;k<Object.keys(statList[i].entries[j].variables).length;k++) {txt = txt.replace("{"+k+"}","<span class=\""+["big",statList[i].entries[j].variables[k].classes??[],statList[i].entries[j].variables[k].classes??[]].flat().join(" ")+"\" style=\""+(statList[i].entries[j].variables[k].style??"")+"\">"+statList[i].entries[j].variables[k].value()+"</span>")}
+						d.innerHTML("div_mainStat_"+i+"_"+j,txt)
+					} else {
+						d.display("div_mainStat_"+i+"_"+j,"none")
+					}
+				}	
+				d.display("div_mainStat_"+i,showCategory?"inline-block":"none")
 			}
 		} else if (g.activeSubtabs.statistics==="largeNumberVisualization") {
 			d.innerHTML("span_largeNumberVisualizationRequirement",BEformat(c.e10))
@@ -311,17 +320,17 @@ function updateHTML() {
 				d.element("div_achievement"+i).style["background-color"] = "rgba(0,"+(fullCompletion?"255,0":"204,204")+",0.5)"
 				d.element("div_achievement"+i).style["border-color"] = "#00"+(fullCompletion?"ff00":"cccc")
 			}
-			if (achievement.selected!==undefined) {
+			if (selections.achievement!==undefined) {
 				d.element("achievementInfo").style.visibility = "visible"
-				showAchievementInfo(achievement.selected)
+				showAchievementInfo(selections.achievement)
 			} else {
 				d.element("achievementInfo").style.visibility = "hidden"
 			}
 			d.innerHTML("button_achievementToProgressBar",(g.achOnProgressBar==="N")?"Show achievement on progress bar":"Hide achievement from progress bar")
 		} else if (g.activeSubtabs.achievements==="secretAchievements") {
-			if (achievement.secretSelected!==undefined) {
+			if (selections.secretAchievement!==undefined) {
 				d.element("secretAchievementInfo").style.visibility = "visible"
-				showSecretAchievementInfo(achievement.secretSelected)
+				showSecretAchievementInfo(selections.secretAchievement)
 			} else {
 				d.element("secretAchievementInfo").style.visibility = "hidden"
 			}
@@ -351,7 +360,7 @@ function updateHTML() {
 			d.innerHTML("span_stardustBoost4Tooltip",g.masteryPower.add(c.d1).pow(stat.stardustBoost4).format(2));
 			d.innerHTML("span_stardustBoost5Tooltip",stat.stardustBoost5.pow(g.XAxis).format(2));
 			d.innerHTML("span_stardustBoost7Tooltip",stat.stardustBoost7.pow(stardustBoost7Exp()).format(2))
-			d.innerHTML("span_stardustBoost7FakeExp",stardustBoost7IsSoftcapped()?Decimal.log(stardustBoost7Exp(),g.truetimeThisStardustReset).format(4):"0.5");
+			d.innerHTML("span_stardustBoost7FakeExp",Decimal.log(stardustBoost7Exp(),g.truetimeThisStardustReset).fix(c.d0_5,false).noLeadFormat(4));
 			/* Stardust boost table */ for (let i=3;i<13;i++) d.display("div_stardustBoost"+i,((g.stardustUpgrades[2]>(i-3))?"inline-block":"none"));
 			/* Stardust upgrade buttons */
 			for (let i=1;i<6;i++) {
@@ -367,21 +376,29 @@ function updateHTML() {
 			let rowsShown = starRowsShown()
 			if (g.starContainerStyle==="Legacy") {
 				for (let i of dynamicStars) {if (rowsShown.includes(Math.floor(i/10))) {d.innerHTML("span_star"+i+"EffectLegacy",showFormulas?formulaFormat(showStarEffectFormula(i)):formatStarEffect(i))}}
+			} else if (g.starContainerStyle==="Modern") {
+				if (selections.star===undefined) {
+					d.element("starInfo").style.visibility = "hidden"
+				} else {
+					d.element("starInfo").style.visibility = "visible"
+					showStarInfo(selections.star)
+				}
+			} else {
+				g.starContainerStyle="Modern"
 			}
 			for (let row=1;row<11;row++) {
 				d.tr("starRow"+row+g.starContainerStyle,rowsShown.includes(row))
 				d.innerHTML("span_row"+row+"StarsAvailable"+g.starContainerStyle,maxStars(row)-[1,2,3,4].map(x=>g.star[x+10*row]?1:0).sum())
 				for (let col=1;col<5;col++) {
 					let num = row*10+col
-					let classname = g.star[num]?("ownedstarbutton"+row):availableStarRow(row)?"availablestarbutton":"lockedstarbutton"
-					d.class("button_star"+num+g.starContainerStyle,["starbutton",classname,g.starContainerStyle.toLowerCase()].join(" "))
+					let classname = g.star[num]?undefined:availableStarRow(row)?"available":"locked"
+					d.class("button_star"+num+g.starContainerStyle,["starbutton","row"+row,classname,g.starContainerStyle.toLowerCase()].filter(x=>(typeof x)==="string").join(" "))
 					if (g.starActivityShown) d.innerHTML("span_star"+num+"Active"+g.starContainerStyle,g.star[num]?"Active":"Inactive")
 				}
 			}
 			d.innerHTML("span_unspentStars",unspentStars()+" / "+g.stars);
 			d.display("button_maxFullStarRows",[1,2,3,4,5,6,7,8,9,10].map(x => maxStars(x)).includes(4)?"inline-block":"none");
 			d.innerHTML("span_nextStarRow",g.stars>=40?"":("The next star you buy will go in row <span class=\"big _stars\">"+starRow(g.stars+1)+"</span>"));
-			d.element("starContainerModern").style["padding-bottom"] = d.element("starPanel").clientHeight+"px"
 		} else if (g.activeSubtabs.stardust==="darkMatter") {
 			d.display("div_darkMatterUnlocked",g.stardustUpgrades[4]===0?"none":"inline-block")
 			d.display("div_darkMatterLocked",g.stardustUpgrades[4]===0?"inline-block":"none")
@@ -408,13 +425,7 @@ function updateHTML() {
 					d.display("button_dark"+type+"Axis",(4+g.stardustUpgrades[0]>i)?"inline-block":"none")
 					if (4+g.stardustUpgrades[0]>i) {
 						d.class("button_dark"+type+"Axis","axisbutton "+(corruption.list.darkAxis.isCorrupted(type)?"corrupted":g.darkmatter.gt(stat["dark"+type+"AxisCost"])?"dark":"locked"));
-						if (Decimal.eq(g["dark"+type+"Axis"],stat["realdark"+type+"Axis"])) {
-							d.display("span_realdark"+type+"Axis","none")
-						} else {
-							d.display("span_realdark"+type+"Axis","inline-block")
-							d.innerHTML("span_realdark"+type+"Axis","Effective: "+stat["realdark"+type+"Axis"].noLeadFormat(3));
-						}
-						d.innerHTML("span_dark"+type+"AxisAmount",BEformat(g["dark"+type+"Axis"])+((stat["freedark"+type+"Axis"].gt(c.d0))?(" + "+stat["freedark"+type+"Axis"].noLeadFormat(2)):""));
+						d.innerHTML("span_dark"+type+"AxisAmount",BEformat(g["dark"+type+"Axis"])+((stat["freedark"+type+"Axis"].gt(c.d0))?(" + "+stat["freedark"+type+"Axis"].noLeadFormat(2)):"")+(Decimal.neq(Decimal.add(g["dark"+type+"Axis"],stat["freedark"+type+"Axis"]),stat["realdark"+type+"Axis"])?(" → "+stat["realdark"+type+"Axis"].noLeadFormat(2)):""));
 						d.innerHTML("span_dark"+type+"AxisEffect",stat["dark"+type+"AxisEffect"][miscStats["dark"+type+"AxisEffect"].from1?"formatFrom1":"noLeadFormat"](miscStats["dark"+type+"AxisEffect"].precision));
 						d.innerHTML("span_dark"+type+"AxisCost",darkAxisCost(type,g["dark"+type+"Axis"],true).format());
 					}
@@ -424,7 +435,7 @@ function updateHTML() {
 					d.innerHTML("span_darkStarEffect2"+type,showFormulas?darkStarEffect2LevelFormula(type):(Decimal.eq(darkStarEffect2Level(type,v1),darkStarEffect2Level(type,v2))?(darkStarEffect2Level(type,v1).mul(dsMult).noLeadFormat(4)+"%"):arrowJoin(darkStarEffect2Level(type,v1).mul(dsMult).noLeadFormat(4)+"%",+darkStarEffect2Level(type,v2).mul(dsMult).noLeadFormat(4)+"%")));
 				}
 				d.innerHTML("span_darkUAxisEffectAlt",stat.darkUAxisEffect.pow(stat.totalDarkAxis).format(3))
-				for (let name of empowerableDarkAxis) {
+				for (let name of empowerableAxis.dark) {
 					d.display("button_empoweredDark"+name+"Axis",stat["empoweredDark"+name+"Axis"].gt(c.d0)?"inline-block":"none");
 					d.innerHTML("span_empoweredDark"+name+"AxisAmount",BEformat(stat["empoweredDark"+name+"Axis"],2));
 				}
@@ -464,12 +475,12 @@ function updateHTML() {
 		for (let id of Object.keys(autobuyers)) { // Autobuyer stuff
 			d.display(id+"Autobuyer",autobuyers[id].unlockReq()?"inline-block":"none");
 			d.innerHTML("span_"+id+"AutobuyerLevel","Level "+g[id+"AutobuyerUpgrades"]+" / "+autobuyerMeta.cap(id))
-			d.class("button_"+id+"AutobuyerToggle",g[id+"AutobuyerOn"]?"automatortoggleon":"automatortoggleoff");
+			d.class("button_"+id+"AutobuyerToggle","automatortoggle "+(g[id+"AutobuyerOn"]?"on":"off"));
 			d.innerHTML("button_"+id+"AutobuyerToggle",g[id+"AutobuyerOn"]?"On":"Off");
 			d.innerHTML("span_"+id+"AutobuyerInterval",timeFormat(autobuyerMeta.interval(id)));
 			d.innerHTML("button_"+id+"AutobuyerUpgrade","Reduce the interval by "+((g[id+"AutobuyerUpgrades"]>=autobuyerMeta.softcap(id))?"1":"5")+"%<br>Cost: "+autobuyerMeta.cost(id).noLeadFormat(2)+" "+autobuyers[id].extRes)
 			d.display("button_"+id+"AutobuyerUpgrade",g[id+"AutobuyerUpgrades"]>=autobuyerMeta.cap(id)?"none":"inline-block");
-			d.element("button_"+id+"AutobuyerUpgrade").style["background-color"]=autobuyerMeta.cost(id).gte(g[autobuyers[id].resource])?"#b2b2b2":"#cccccc";
+			d.element("button_"+id+"AutobuyerUpgrade").className = "autobuyerupgrade "+(autobuyerMeta.cost(id).gte(g[autobuyers[id].resource])?"":"un")+"locked";
 		}
 		let visibleAxis = unlocked("Matrix")?12:unlocked("Hawking Radiation")?(8+study13.rewardLevels.slabdrill):(4+g.stardustUpgrades[0])
 		for (let i=0;i<12;i++) {
@@ -484,11 +495,11 @@ function updateHTML() {
 		d.display("wormholeAutomator",achievement.ownedInTier(5)>=12?"inline-block":"none");
 		d.innerHTML("button_stardustAutomatorMode",stardustAutomatorModes[g.stardustAutomatorMode]??"Amount of stardust");
 		d.innerHTML("button_wormholeAutomatorMode",wormholeAutomatorModes[g.wormholeAutomatorMode]??"Amount of HR");
-		d.class("button_starAllocatorToggle",g.starAllocatorOn?"automatortoggleon":"automatortoggleoff");
+		d.class("button_starAllocatorToggle","automatortoggle "+(g.starAllocatorOn?"on":"off"));
 		d.innerHTML("button_starAllocatorToggle",g.starAllocatorOn?"On":"Off");
-		d.class("button_stardustAutomatorToggle",g.stardustAutomatorOn?"automatortoggleon":"automatortoggleoff");
+		d.class("button_stardustAutomatorToggle","automatortoggle "+(g.stardustAutomatorOn?"on":"off"));
 		d.innerHTML("button_stardustAutomatorToggle",g.stardustAutomatorOn?"On":"Off");
-		d.class("button_wormholeAutomatorToggle",g.wormholeAutomatorOn?"automatortoggleon":"automatortoggleoff");
+		d.class("button_wormholeAutomatorToggle","automatortoggle "+(g.wormholeAutomatorOn?"on":"off"));
 		d.innerHTML("button_wormholeAutomatorToggle",g.wormholeAutomatorOn?"On":"Off");
 		d.innerHTML("button_researchAutobuyerMode",researchAutobuyerModes[g.researchAutobuyerMode]??"All free research")
 		// input storage
@@ -501,26 +512,36 @@ function updateHTML() {
 		g.starAutobuyerCap=d.element("starAutobuyerMax").value;
 	}
 	if (g.activeTab==="wormhole") {
+		if ((g.activeStudy===10)&&(studyPower(10)===0)) {if (g.activeSubtabs.wormhole!=="studies") openSubTab("wormhole","studies")};
 		d.display("div_hr_disabledTop",g.topResourcesShown.hr?"none":"inline-block")
 		d.display("br_hr_disabledTop",g.topResourcesShown.hr?"none":"inline-block")
 		if (!g.topResourcesShown.hr) d.innerHTML("span_hr_disabledTop",g.hawkingradiation.format())
 		if (g.activeSubtabs.wormhole==="research") {
-			d.innerHTML("span_discoveryDisplay",unspentDiscoveries().format(0,3)+" / "+g.totalDiscoveries.format(0,3));
+			let visible = visibleResearch()
+			d.innerHTML("span_discoveryDisplay",unspentDiscoveries().format(0,1)+" / "+g.totalDiscoveries.format(0,1)+((g.study13Bindings[225]&&Decimal.lte(g.spentDiscoveries,study13.bindings[225].spendableDiscoveries()))?(" <span class=\"small\" style=\"color:var(--binding);\">("+(study13.bindings[225].spendableDiscoveries().sub(g.spentDiscoveries).format(0,1)+" / "+study13.bindings[225].spendableDiscoveries().format(0,1)+")</span>")):""));
 			d.innerHTML("span_discoveryKnowledgeReq",showFormulas?formulaFormat("10<sup>(D + 1)"+formulaFormat.mult(stat.extraDiscoveries_mul.recip())+formulaFormat.add(stat.extraDiscoveries_add.neg())+"</sup>"):nextDiscovery().format());
 			d.innerHTML("span_knowledge",g.knowledge.format());
 			d.innerHTML("span_knowledgeEffect",showFormulas?formulaFormat(formulaFormat.convSoftcap("log<sup>[2]</sup>(K + 10)"+formulaFormat.mult(stat.knowledgeEffectPower),stat.knowledgeEffectCap.mul(c.d0_75),stat.knowledgeEffectCap,Decimal.div(stat.knowledgeEffect,stat.knowledgeEffectCap).gt(c.d0_75))):stat.knowledgeEffect.format(3));
 			d.innerHTML("span_knowledgePerSec",stat.knowledgePerSec.format(2));
 			d.element("researchContainer").style["padding-bottom"] = d.element("discoveryPanel").clientHeight+"px"
-			if (researchSelected !== "") {(researchSelected==="u")?unknownResearchInfo():showResearchInfo(researchRow(researchSelected),researchCol(researchSelected))}
+			if ((selections.research===undefined)||((selections.research==="r6_9")&&(!g.research.r6_9))) {
+				d.element("researchInfo").style.visibility = "hidden"
+			} else {
+				d.element("researchInfo").style.visibility = "visible"
+				if (visible.includes(selections.research)) {
+					showResearchInfo(researchRow(selections.research),researchCol(selections.research))
+				} else {
+					unknownResearchInfo(selections.research)
+				}
+			}
 			d.display("button_projectedResearchCost",unlocked("Light")?"inline-block":"none")
 			for (let i=0;i<4;i++) {
-				d.element("button_observation"+i).style["background-color"] = g[observationResources[i]].gte(observationCost(i))?"rgba(179,204,255,0.75)":"rgba(128,153,204,0.75)"
+				d.element("button_observation"+i).className = "observation"+(g[observationResources[i]].gte(observationCost(i))?"":" locked")
 				d.innerHTML("span_observeCost"+i,BEformat(observationCost(i)));
 			}
 			d.element("button_researchRespec").style["background-color"] = g.researchRespec?"rgba(128,255,204,0.75)":"rgba(179,204,255,0.75)";
 			d.element("button_buyMaxResearch").style["background-color"] = g.buyMaxResearch?"rgba(255,204,128,0.75)":"rgba(179,204,255,0.75)";
 			if (showingResearchLoadouts) {for (let i=0;i<9;i++) d.class("div_researchLoadout"+(i+1),"researchLoadout"+(researchLoadoutSelected===(i+1)?" selected":""))}
-			let visible = visibleResearch()
 			for (let i of buyableResearch) d.element("button_research_"+i+"_visible").style.filter = "brightness("+(darkenResearch(i,visible)?50:100)+"%)"
 			for (let i of ["r27_8","r33_3","r33_13","r44_8"]) {if (visible.includes(i)) {d.innerHTML("button_research_"+i+"_visible",research[i].icon)}}
 		} else if (g.activeSubtabs.wormhole==="studies") {
@@ -554,6 +575,7 @@ function updateHTML() {
 			d.innerHTML("span_chromaPerSec",stat.chromaPerSec.format(2))
 			d.innerHTML("span_unspentStarsLight",g.stars)
 			d.innerHTML("span_baseChroma",stat.chromaGainBase.pow(g.stars-starCap()).noLeadFormat(2))
+			d.innerHTML("span_baseChromaPerStar",stat.chromaGainBase.noLeadFormat(3))
 			d.display("lightContainer2",lightTiersUnlocked()>1?"inline-block":"none")
 			d.display("lightContainer3",lightTiersUnlocked()>2?"inline-block":"none")
 			for (let i=0;i<[0,3,6,8,9][lightTiersUnlocked()];i++) {
@@ -639,7 +661,7 @@ function updateHTML() {
 							let eff = stat["luckUpgLevel_"+type+"_"+upg]
 							d.innerHTML("span_luckUpg_"+type+upg+"_Purchased",(Decimal.eq(bought,eff)?bought.format():arrowJoin(bought.format(),eff.noLeadFormat(3)))+"<br>(+"+affordable.format()+")")
 							d.innerHTML("span_luckUpg_"+type+upg+"_Cost",luckUpgradeCost(type,upg,affordable).format())
-							d.innerHTML("span_luckUpg_"+type+upg+"_Effect",showFormulas?formulaFormat(luckUpgrades[type][upg].formula()):arrowJoin("<b>"+luckUpgrades[type][upg].format(luckUpgrades[type][upg].eff())+"</b>","<b>"+luckUpgrades[type][upg].format(luckUpgrades[type][upg].eff(calcStatWithDifferentBase("luckUpgLevel_"+type+"_"+upg,g.luckUpgrades[type][upg].add(c.d1))))+"</b>"))
+							d.innerHTML("span_luckUpg_"+type+upg+"_Effect",showFormulas?formulaFormat(luckUpgrades[type][upg].formula()):arrowJoin("<b>"+luckUpgrades[type][upg].format(luckUpgrades[type][upg].eff())+"</b>","<b>"+luckUpgrades[type][upg].format(luckUpgrades[type][upg].eff(calcStatWithDifferentBase("luckUpgLevel_"+type+"_"+upg,g.luckUpgrades[type][upg].add(affordable))))+"</b>"))
 						} else {
 							d.display("button_"+type+upg,"none")
 						}
@@ -664,9 +686,9 @@ function updateHTML() {
 					let affordable = affordablePrismaticUpgrades(upg)
 					let owned = g.prismaticUpgrades[upg]
 					let unlimited = ((typeof data.max) === "undefined")
-					d.innerHTML("span_prismaticUpgrade_"+upg+"_Purchased",(owned.format()+(unlimited?"":(" / "+data.max.format())))+"<br>(+"+affordable.max(c.d1).format()+")")
-					d.innerHTML("span_prismaticUpgrade_"+upg+"_Cost",Decimal.eq(owned,data.max??c.maxvalue)?"Maxed":("Cost: "+((showFormulas&&(data.max??c.maxvalue).gt(c.d1))?formulaFormat(unlimited?(data.scale.noLeadFormat(2)+"<sup>λ</sup> × "+data.baseCost.format()):data.costFormula()):prismaticUpgradeCost(upg,affordable.max(c.d1)).format())))
 					let maxed = unlimited?false:Decimal.eq(owned,data.max)
+					d.innerHTML("span_prismaticUpgrade_"+upg+"_Purchased",(owned.format()+(unlimited?"":(" / "+data.max.format())))+(maxed?"":("<br>(+"+affordable.max(c.d1).format()+")")))
+					d.innerHTML("span_prismaticUpgrade_"+upg+"_Cost",Decimal.eq(owned,data.max??c.maxvalue)?"Maxed":("Cost: "+((showFormulas&&(data.max??c.maxvalue).gt(c.d1))?formulaFormat(unlimited?(data.scale.noLeadFormat(2)+"<sup>λ</sup> × "+data.baseCost.format()):data.costFormula()):prismaticUpgradeCost(upg,affordable.max(c.d1)).format())))
 					for (let i of data.variables) d.innerHTML("span_prismaticUpgrade_"+upg+"_"+i,(showFormulas&&(typeof data.formula[i]==="function"))?formulaFormat(data.formula[i]()):(maxed||(typeof data.formula[i]!=="function"))?data.format[i]():arrowJoin(data.format[i](),data.format[i](((data.variables.length===1)?data.eff:data.eff[i])(owned.add(affordable.max(c.d1))))))
 					let classList = ["prismaticUpgrade"]
 					if (data.refundable) {
@@ -694,29 +716,23 @@ function updateHTML() {
 				d.display("button_anti"+type+"Axis",visible?"inline-block":"none")
 				if (visible) {
 					d.class("button_anti"+type+"Axis","axisbutton "+(corruption.list.antiAxis.isCorrupted(type)?"corrupted":g.antimatter.gt(stat["anti"+type+"AxisCost"])?"anti":"locked"));
-					if (Decimal.eq(g["anti"+type+"Axis"],stat["realanti"+type+"Axis"])) {
-						d.display("span_realanti"+type+"Axis","none")
-					} else {
-						d.display("span_realanti"+type+"Axis","inline-block")
-						d.innerHTML("span_realanti"+type+"Axis","Effective: "+stat["realanti"+type+"Axis"].noLeadFormat(3));
-					}
-					d.innerHTML("span_anti"+type+"AxisAmount",BEformat(g["anti"+type+"Axis"])+((stat["freeanti"+type+"Axis"].gt(c.d0))?(" + "+stat["freeanti"+type+"Axis"].noLeadFormat(2)):""));
+					d.innerHTML("span_anti"+type+"AxisAmount",BEformat(g["anti"+type+"Axis"])+((stat["freeanti"+type+"Axis"].gt(c.d0))?(" + "+stat["freeanti"+type+"Axis"].noLeadFormat(2)):"")+(Decimal.neq(Decimal.add(g["anti"+type+"Axis"],stat["freeanti"+type+"Axis"]),stat["realanti"+type+"Axis"])?(" → "+stat["realanti"+type+"Axis"].noLeadFormat(2)):""));
 					d.innerHTML("span_anti"+type+"AxisEffect",stat["anti"+type+"AxisEffect"][miscStats["anti"+type+"AxisEffect"].from1?"formatFrom1":"noLeadFormat"](miscStats["anti"+type+"AxisEffect"].precision));
-					d.innerHTML("span_anti"+type+"AxisCost",BEformat(stat["anti"+type+"AxisCost"]));
+					d.innerHTML("span_anti"+type+"AxisCost",stat["anti"+type+"AxisCost"].format());
 				}
 				let v1 = antiAxisDimBoost(type);
 				let v2 = antiAxisDimBoost(type,true);
-				function formatBoost(x){return (x.gt(c.d2)?x.sub(c.d1).mul(c.e2).noLeadFormat(4):x.sub(c.d1).mul(c.e2).toFixed(2))+"%"}
-				d.innerHTML("span_antiAxisBoost"+type,showFormulas?antiAxisDimBoostFormula(type):v1.gt(c.d3)?formatBoost(v1):arrowJoin(formatBoost(v1),formatBoost(v2)));
+				function formatBoost(x){return v1.gte(c.d10)?(x.noLeadFormat(4)+"×"):(x.sub(c.d1).mul(c.e2).toFixed(2)+"%")}
+				d.innerHTML("span_antiAxisBoost"+type,showFormulas?antiAxisDimBoostFormula(type):v1.gte(c.d10)?formatBoost(v1):arrowJoin(formatBoost(v1),formatBoost(v2)));
 			}
-			d.innerHTML("span_antiUAxisEffectAlt",stat.antiUAxisEffect.pow(stat.totalAntiAxis).noLeadFormat(4))
+			d.innerHTML("span_antiUAxisEffectAlt",stat.antiUAxisEffect.pow(stat.totalAntiAxis).formatFrom1(3))
 			d.innerHTML("span_antiTAxisEffectAlt",calcStatUpTo("knowledgePerSec","Observations").pow(stat.antiTAxisEffect).format(2))
-			for (let name of empowerableAntiAxis) {
+			for (let name of empowerableAxis.anti) {
 				d.display("button_empoweredAnti"+name+"Axis",stat["empoweredAnti"+name+"Axis"].gt(c.d0)?"inline-block":"none");
 				d.innerHTML("span_empoweredAnti"+name+"AxisAmount",BEformat(stat["empoweredAnti"+name+"Axis"],2));
 			}
 			if (g.studyCompletions[13]>23) {
-				d.display("div_antimatterGalaxies","inline-block")
+				d.display("td_antimatterGalaxies","inline-block")
 				d.innerHTML("span_antimatterGalaxies",g.antimatterGalaxies.format())
 				d.class("button_antimatterGalaxy",g.antimatter.gte(antimatterGalaxy.req())?"unlocked":"locked");
 				let buttonText = "Gain "+((g.antimatter.gte(antimatterGalaxy.req())&&g.antimatterGalaxyBulk)?(antimatterGalaxy.affordable().sub(g.antimatterGalaxies).format()+" antimatter galaxies"):"an antimatter galaxy");
@@ -727,7 +743,7 @@ function updateHTML() {
 				d.innerHTML("span_realAntimatterGalaxies",Decimal.eq(g.antimatterGalaxies,stat.realAntimatterGalaxies)?"":("Effective: "+(Decimal.eq(g.antimatterGalaxies,antimatterGalaxy.affordable())?stat.realAntimatterGalaxies.noLeadFormat(3):arrowJoin(stat.realAntimatterGalaxies.noLeadFormat(3),calcStatWithDifferentBase("realAntimatterGalaxies",antimatterGalaxy.affordable()).noLeadFormat(3)))))
 				d.innerHTML("span_antimatterGalaxyMainText",buttonText);
 			} else {
-				d.display("div_antimatterGalaxies","none")
+				d.display("td_antimatterGalaxies","none")
 			}
 		} else if (g.activeSubtabs.wormhole==="wormholeUpgrades") {
 			for (let i=1;i<13;i++) {
@@ -737,11 +753,12 @@ function updateHTML() {
 					text = text.replace("{}",showFormulas?formulaFormat(wormholeUpgrades[i].formula()):(Math.max(g.wormholeUpgrades[i],1)>=wormholeUpgrades[i].max)?wormholeUpgrades[i].format(wormholeUpgrades[i].eff()):arrowJoin(wormholeUpgrades[i].format(wormholeUpgrades[i].eff(g.wormholeUpgrades[i])),wormholeUpgrades[i].format(wormholeUpgrades[i].eff(g.wormholeUpgrades[i]+1))))
 				}
 				d.innerHTML("span_wormholeUpgrade"+i+"Text",text)
-				d.innerHTML("span_wormholeUpgrade"+i+"Cost",(Math.max(wormholeUpgrades[i].max,2)===g.wormholeUpgrades[i])?"Maxed":("Cost: "+wormholeUpgrades[i].cost.format()+" HR"))
+				d.innerHTML("span_wormholeUpgrade"+i+"Cost",(Math.max(wormholeUpgrades[i].max,2)===g.wormholeUpgrades[i])?"Maxed":("Cost: "+wormholeUpgrades[i].cost.format(0,[3,9].includes(i)?1:0)+" HR"))
 			}
 		} else if (g.activeSubtabs.wormhole==="study13") {
-			let p = studyPower(13), colors // [border, background, text]
-			let h = (p<24)?(p/24):(p<56)?((p+8)/32):(p<96)?((p+24)/40):(p<144)?((p+48)/48):(p<256)?((p+80)/56):((Math.floor(Date.now()/5000)+0.5+Math.sin(((Date.now()%5000)-2500)*Math.PI/5000)/2)%6)
+			let p = studyPower(13)-(g.study13Bindings[25]?56:0), colors // [border, background, text]
+			let h = ((p<24)?(p/24):(p<56)?((p+8)/32):(p<96)?((p+24)/40):(p<144)?((p+48)/48):(p<200)?((p+80)/56):5)+(g.study13Bindings[25]?1:0)
+			if (h===6) {h = ((Math.floor(Date.now()/5000)+0.5+Math.sin(((Date.now()%5000)-2500)*Math.PI/5000)/2)%6)}
 			if (h<1) {colors = ["rgba(51,"+(51*h)+",0,0.9)","rgba(102,"+(102*h)+",0,0.9)","rgb(204,"+(204*h)+",0)"]}
 			else if (h<2) {colors = ["rgba("+(51*(2-h))+",51,0,0.9)","rgba("+(102*(2-h))+",102,0,0.9)","rgb("+(204*(2-h))+",204,0)"]}
 			else if (h<3) {colors = ["rgba(0,51,"+(51*(h-2))+",0.9)","rgba(0,102,"+(102*(h-2))+",0.9)","rgb(0,204,"+(204*(h-2))+")"]}
@@ -764,13 +781,14 @@ function updateHTML() {
 			if (nextUpgrade!==Infinity) {rewardText.push("An existing reward will be upgraded at "+nextUpgrade+" completions")}
 			d.innerHTML("span_study13Reward",(rewardText.length===0)?"All rewards unlocked":rewardText.join("<br>"))
 			if (study13.activeT3==="bindings") {
-				if (study13.bindingSelected===undefined) {
+				if (selections.study13Binding===undefined) {
 					d.innerHTML("study13BindingInfo","Hover over a Binding to see more information")
 				} else {
-					let data = study13.bindings[study13.bindingSelected]
-					d.innerHTML("study13BindingInfo",(study13.bindingPower(study13.bindingSelected).eq(c.d1)?"":("<span style=\"float:right;font-size:50%\">"+study13.bindingPower(study13.bindingSelected).mul(c.e2).noLeadFormat(3)+"% Powered</span><br>"))+"<h6 style=\"font-size:16px;margin:0px;\">Binding "+study13.bindingSelected+"</h6><p>"+data.description()+"</p><p>["+data.lv+" binding level"+((data.lv===1)?"":"s")+"]</p>"+((g.study13ShowParentBindings&&(data.adjacent_req.length>0))?("<p>[Need Binding"+((data.adjacent_req.length===1)?"":"s")+" "+data.adjacent_req.joinWithAnd()+"]</p>"):"")+"<p>"+(g.study13Bindings[study13.bindingSelected]?"<span style=\"color:#ff6666\">(Active)</span>":"<span style=\"color:#999999\">(Inactive)</span>")+"</p>")
+					let data = study13.bindings[selections.study13Binding]
+					d.innerHTML("study13BindingInfo",(study13.bindingPower(selections.study13Binding).eq(c.d1)?"":("<span style=\"float:right;font-size:50%\">"+study13.bindingPower(selections.study13Binding).mul(c.e2).noLeadFormat(3)+"% Powered</span><br>"))+"<h6 style=\"font-size:16px;margin:0px;\">Binding "+selections.study13Binding+"</h6><p>"+data.description()+"</p><p>["+data.lv+" binding level"+((data.lv===1)?"":"s")+"]</p>"+((g.study13ShowParentBindings&&(data.adjacent_req.length>0))?("<p>[Need Binding"+((data.adjacent_req.length===1)?"":"s")+" "+data.adjacent_req.joinWithAnd()+"]</p>"):"")+"<p>"+(g.study13Bindings[selections.study13Binding]?"<span style=\"color:#ff6666\">(Active)</span>":"<span style=\"color:#999999\">(Inactive)</span>")+"</p>")
 				}
 				for (let i of [236,265,275]) {d.innerHTML("button_study13Binding"+i,study13.bindings[i].icon)}
+				d.display("button_study13Binding25",g.achievement[913]?"inline-block":"none")
 			} else if (study13.activeT3==="rewards") {
 				if (study13.rewardSelected===undefined) {
 					d.innerHTML("study13RewardInfo",(g.studyCompletions[13]===0)?"When you unlock a reward, it will appear to the left.":"Hover over a reward to see more information")
@@ -780,8 +798,9 @@ function updateHTML() {
 					let prevLv = study13.prevRewardLevels[selected]
 					let currLv = study13.rewardLevels[selected]
 					let out = "<h5 style=\"font-size:20px;margin:0px;\">"+data.name+"</h5><br>"
-					if (data.type==="composite") {out += "<table style=\"text-align:left\"><colgroup><col style=\"width:140px\"><col style=\"width:340px\"></colgroup>"+countTo(currLv).map(x=>"<tr"+((x<=prevLv)?"":" style=\"color:var(--binding_light)\"")+"><td style=\"vertical-align:top;\">Level "+x+" ("+data.breakpoints[x-1]+")</td><td style=\"vertical-align:top;\">"+data.desc(x)+"</td></tr>").join("")+"</table>"}
+					if (data.type==="composite") {out += "<table style=\"text-align:left\"><colgroup><col style=\"width:96px\"><col style=\"width:384px\"></colgroup>"+countTo(currLv).map(x=>"<tr style=\"color:"+((x<=prevLv)?"inherit":"var(--binding_light)")+";padding-bottom:3px;\"><td style=\"vertical-align:top;padding-bottom:3px;\">Level "+x+"</td><td style=\"vertical-align:top;padding-bottom:3px;\">"+data.desc(x)+"</td></tr>").join("")+"</table>"}
 					else {out += data.desc(currLv,prevLv)}
+					out += "<div style=\"position:absolute;bottom:10px;left:10px;font-size:10px;width:calc(100% - 20px);text-align:center;\">"+((data.type==="single")?("Level threshold: "+data.breakpoints[0]):("Level thresholds:<br>"+data.breakpoints.slice(0,study13.rewardLevels[selected]).map((x,i)=>"<div style=\"height:25px;width:60px;display:inline-block;color:"+((i<prevLv)?"inherit":"var(--binding_light)")+"\">Level "+(i+1)+"<br>"+x+"</div>").join("")))+"</div>"
 					d.innerHTML("study13RewardInfo",out)
 				}
 			}
@@ -790,6 +809,7 @@ function updateHTML() {
 	if (d.element("storyTitle")!==null) d.element("storyTitle").style = "background:-webkit-repeating-linear-gradient("+(45*Math.sin(Number(new Date()/1e4)))+"deg,#f00,#ff0 4%,#0f0 8.5%,#0ff 12.5%,#00f 16.5%,#f0f 21%,#f00 25%);-webkit-background-clip:text;";
 }
 function tick(time) {																																		 // The game loop, which consists of functions that run automatically. Frame rate is 20fps
+	g.EMDLevel = EMDLevel()
 	if (time<0) {
 		error("An error has occurred which would have caused time to reverse by "+timeFormat(time)+"")
 		return
@@ -800,14 +820,23 @@ function tick(time) {																																		 // The game loop, which 
 		g.dilatedTime += diff
 		time -= diff
 	}
+	for (let i of ["timePlayed","timeThisStardustReset","timeThisWormholeReset","timeThisSpacetimeReset","dilatedTime"]) {
+		if ((typeof g[i]) !== "number") {
+			g[i] = 0
+			error("<code>"+i+"</code> has memory-leaked. This is a known error which alemaninc is investigating")
+		}
+	}
 	g.timePlayed+=time;
 	g.timeThisStardustReset+=time;
 	g.timeThisWormholeReset+=time;
 	g.timeThisSpacetimeReset+=time;
 	if (StudyE(9)) {if (g.timeThisWormholeReset>=9) {studies[9].reset()}}
-	if (study13.bound(236)&&(g.timeThisWormholeReset>study13.bindingEff(236))) {wormholeReset();popup({text:stat.totalDarkAxis.gt(stat.wormholeDarkAxisReq)?"You have automatically completed Study XIII through Binding 236.":("You failed Study XIII due to running out of time for Binding 236.<br>You reached "+stat.totalDarkAxis.format()+" / "+studies[13].goal().format()+" dark axis"),buttons:[["Close",""]]})}
+	if (study13.bound(236)&&(g.timeThisWormholeReset>study13.bindingEff(236))) {popup({text:stat.totalDarkAxis.gt(stat.wormholeDarkAxisReq)?"You have automatically completed Study XIII through Binding 236.":("You failed Study XIII due to running out of time for Binding 236.<br>You reached "+stat.totalDarkAxis.format()+" / "+studies[13].goal().format()+" dark axis"),buttons:[["Close",""]]});wormholeReset()}
 	updateStats()
-	if (!unlocked("Corruption")) {for (let i of ["axis","darkAxis","antiAxis"]) {if (corruption.list[i].visible()) {unlockFeature("Corruption");addAchievement(930)}}}
+	for (let i of corruption.all) {if (corruption.list[i].unlock()) {
+		g.corruptionsUnlocked |= 2 ** corruption.all.indexOf(i)
+	}}
+	if (g.corruptionsUnlocked!==0) {unlockFeature("Corruption");addAchievement(930)}
 
 
 	// Time section
@@ -834,7 +863,7 @@ function tick(time) {																																		 // The game loop, which 
 	if (stat.ironWill) g.ach505Progress = g.ach505Progress.max(stat.totalDarkAxis);
 	if (stat.chromaPerSec.gte(c.d1)) g.ach711Progress = Math.min(g.ach711Progress,g.stars)
 	achievement(825).update()
-	o.add("ach901Int",[g.exoticmatter.alog(c.d10).pow(c.d10),stat.tickspeed,time].productDecimals())
+	o.add("ach901Int",[g.exoticmatter.add1Log(c.d10).pow(c.d10),stat.tickspeed,time].productDecimals())
 	if (Decimal.gt(stat.tickspeed,g.bestTickspeedThisMatrix)) {g.bestTickspeedThisMatrix = stat.tickspeed}
 	if (Decimal.gt(stat.tickspeed,g.bestTickspeed)) {g.bestTickspeed = stat.tickspeed}
 	if (g.baselessMilestones[4]!==13) {
@@ -845,10 +874,9 @@ function tick(time) {																																		 // The game loop, which 
 			}
 		}
 	}
-
 	if (newsSupport.newsletter.spamStart<Date.now()) { // Secret achievement 33 "Stat Mark"
 		if (Math.random()<(deltatime/100)*(1+(Date.now()-newsSupport.newsletter.spamStart)/1000)) {
-			(newsSupport.newsletter.remaining.length===0)?newsSupport.newsletter.finalNotify():notify("<span style=\"border-style:solid;border-radius:5px;border-width:1px;border-color:#000000\" onClick=\"newsSupport.newsletter.ask()\">VERIFICATION</span>","#009999","#00ffff")
+			(newsSupport.newsletter.remaining.length===0)?newsSupport.newsletter.finalNotify():notify("<span style=\"border-style:solid;border-radius:5px;border-width:1px;border-color:#000000\" onMousedown=\"newsSupport.newsletter.ask()\">VERIFICATION</span>","#009999","#00ffff")
 			newsSupport.newsletter.spamStart=Date.now()+3000
 		} else if (Math.random()<deltatime/(newsSupport.newsletter.remaining.length/8)) {notify(Array.random(newsSupport.spamCompendium),"hsl("+ranint(0,359)+" 80% 40%)","#000000")}
 	}
@@ -869,10 +897,6 @@ function tick(time) {																																		 // The game loop, which 
 			forceExit = true
 			exitText = "Relevant study research not owned ("+researchOut(studies[g.activeStudy].research)+")"
 		}
-		if ((g.activeStudy!==13)&&(studyPower(g.activeStudy)>=studies[0].effectiveMaxCompletions[g.activeStudy])) {
-			forceExit = true
-			exitText = "Placeholder level entered (current: "+(studyPower(g.activeStudy)+1)+", max: "+studies[0].effectiveMaxCompletions[g.activeStudy]+")"
-		}
 		if (forceExit) {
 			popup({text:"You have been forcefully removed from Study "+studies[0].roman(g.activeStudy)+" due to the presence of a bug. Sorry!<br>Details: "+exitText+"<br>Please tell alemaninc about this.",buttons:[["Close",""]]})
 			wormholeReset()
@@ -884,8 +908,8 @@ function tick(time) {																																		 // The game loop, which 
 
 	// Incrementer section - this comes last because otherwise resets don't work properly
 	for (let i=0;i<energyTypes.length;i++) {   // energy comes first to make Study III harder :D
-		if (energyTypesUnlocked()>i) o.mul(energyTypes[i]+"Energy",energyPerSec(i).pow(time));
-		else g[energyTypes[i]+"Energy"]=c.d1;
+		if (energyTypesUnlocked()>i) {o.mul(energyTypes[i]+"Energy",energyPerSec(i).pow(time));}
+		else {g[energyTypes[i]+"Energy"]=c.d1;}
 	}
 	incrementExoticMatter(stat.exoticmatterPerSec.mul(time));
 	g.exoticmatter = g.exoticmatter.max(stat.exoticmatterPerSec.mul(g.achievement[112]?c.d60:g.achievement[111]?c.d30:g.achievement[110]?c.d15:0)).fix(c.d0);
@@ -895,7 +919,7 @@ function tick(time) {																																		 // The game loop, which 
 	}
 	if ((achievement.ownedInTier(5)===30)&&(g.activeStudy===0)) incrementStardust(stat.pendingstardust.sub(g.stardust).max(c.d0));
 	incrementStardust(stat.stardustPerSec.mul(time));
-	if (g.stardustUpgrades[4]>0) o.add("darkmatter",stat.darkmatterPerSec.mul(time));
+	if (g.stardustUpgrades[4]>0) {incrementDarkMatter(stat.darkmatterPerSec.mul(time))};
 	if (unlocked("Hawking Radiation")) o.add("knowledge",stat.knowledgePerSec.mul(time));
 	let chromaToGet = stat.chromaPerSec.mul(time)
 	if (g.achievement[815]&&g.ach815RewardActive) {
@@ -906,7 +930,11 @@ function tick(time) {																																		 // The game loop, which 
 	for (let i=0;i<9;i++) if (g.chroma[i].gte(lumenReq(i))) {addLumens(i)}
 	if (g.studyCompletions[7]>0) o.add("luckShards",stat.luckShardsPerSec.mul(time))
 	if (g.research.r20_8) o.add("prismatic",stat.prismaticPerSec.mul(time))
-	if (g.studyCompletions[9]>0) o.add("antimatter",stat.antimatterPerSec.mul(time))
+	if (g.study9.fracxp.gte(c.d1)) {
+		g.study9.xp = g.study9.xp.add(g.study9.fracxp.floor())
+		g.study9.fracxp = g.study9.fracxp.sub(g.study9.fracxp.floor())
+	}
+	if (g.studyCompletions[9]>0) {incrementAntimatter(stat.antimatterPerSec.mul(time))}
 
 
 	// Automation section
@@ -923,12 +951,12 @@ function tick(time) {																																		 // The game loop, which 
 	}
 	if (achievement.ownedInTier(5)>=3 && g.stardustUpgradeAutobuyerOn) stardustUpgradeAutobuyerProgress+=time/autobuyerMeta.interval("stardustUpgrade");
 	if (stardustUpgradeAutobuyerProgress > 1) {
-		for (let i=1;i<=g.stardustUpgrades.length;i++) while ((g.stardustUpgrades[i-1]<(g.stardustUpgradeAutobuyerCaps[i-1]==="u"?stat["stardustUpgrade"+i+"Cap"]:Math.min(stat["stardustUpgrade"+i+"Cap"],g.stardustUpgradeAutobuyerCaps[i-1])))&&(g.stardust.gte(stat["stardustUpgrade"+i+"Cost"]))) buyStardustUpgrade(i)
+		for (let i=1;i<=g.stardustUpgrades.length;i++) while ((g.stardustUpgrades[i-1]<(g.stardustUpgradeAutobuyerCaps[i-1]==="u"?stat["stardustUpgrade"+i+"Cap"]:Math.min(stat["stardustUpgrade"+i+"Cap"],g.stardustUpgradeAutobuyerCaps[i-1])))&&(g.stardust.gte(stat["stardustUpgrade"+i+"Cost"]))&&(!((((achievement.maxForLocks.specificStardustUpgrades[g.achOnProgressBar]?.[i]??Infinity)===g.stardustUpgrades[i-1])||((achievement.maxForLocks.totalStardustUpgrades[g.achOnProgressBar]??Infinity)===effectiveStardustUpgrades()))&&achievement.locking(g.achOnProgressBar)))) buyStardustUpgrade(i)
 		stardustUpgradeAutobuyerProgress%=1;
 	}
 	if (achievement.ownedInTier(5)>=4 && (g.starAutobuyerOn || g.starAllocatorOn)) starAutobuyerProgress+=time/autobuyerMeta.interval("star");
 	if (starAutobuyerProgress > 1) {
-		if (g.starAutobuyerOn) {while (starCost().lt(g.stardust)&&g.stars<(g.starAutobuyerCap==="u"?Infinity:Number(g.starAutobuyerCap))) buyStar();}
+		if (g.starAutobuyerOn) {while (starCost().lt(g.stardust)&&(g.stars<(g.starAutobuyerCap==="u"?Infinity:Number(g.starAutobuyerCap)))&&(!((g.stars===achievement.maxForLocks.stars[g.achOnProgressBar])&&achievement.locking(g.achOnProgressBar)))) buyStar(false);}
 		if (unspentStars()>0&&g.starAllocatorOn&&(totalStars<g.starAllocatorBuild.length)) for (let i of g.starAllocatorBuild) buyStarUpgrade(i);
 		starAutobuyerProgress%=1;
 	}
@@ -937,13 +965,15 @@ function tick(time) {																																		 // The game loop, which 
 		let mode = g.stardustAutomatorMode
 		if (mode === 0) {doReset = stat.pendingstardust.gte(g.stardustAutomatorValue)} // at X stardust
 		else if (mode === 1) {doReset = g.timeThisStardustReset>=Number(g.stardustAutomatorValue)} // at X seconds
-		else if (mode === 2) {doReset = stat.pendingstardust.gte(g.stardust.mul(g.stardustAutomatorValue))} // multiply stardust by X
-		else if (mode === 3) {doReset = stat.pendingstardust.gte(g.stardust.pow(g.stardustAutomatorValue))} // power stardust by X
+		else if (mode === 2) {doReset = stat.pendingstardust.gte(g.stardust.mul(g.stardustAutomatorValue))} // multiply current stardust by X
+		else if (mode === 3) {doReset = stat.pendingstardust.gte(g.stardust.pow(g.stardustAutomatorValue))} // power current stardust by X
+		else if (mode === 4) {doReset = stat.pendingstardust.gte((g.previousStardustRuns.last10.length===0)?c.d0:N(g.previousStardustRuns.last10[0].gain).mul(g.stardustAutomatorValue))} // multiply previous stardust by X
+		else if (mode === 5) {doReset = stat.pendingstardust.gte((g.previousStardustRuns.last10.length===0)?c.d0:N(g.previousStardustRuns.last10[0].gain).pow(g.stardustAutomatorValue))} // power previous stardust by X
 		else {
 			if (achievement.ownedInTier(5)>=8) {popup({text:"Due to an error, stardust automator mode was reverted to the default value of amount of stardust."})}
 			g.stardustAutomatorMode = 0
 		}
-		if (doReset) attemptStardustReset();
+		if (doReset) attemptStardustReset(false);
 	}
 	g.stardustAutomatorValue=d.element("stardustAutomatorValue").value;
 	if (achievement.ownedInTier(5)>=12 && g.wormholeAutomatorOn) {
@@ -953,6 +983,8 @@ function tick(time) {																																		 // The game loop, which 
 		else if (mode === 1) {doReset = g.timeThisWormholeReset>=Number(g.wormholeAutomatorValue)} // at X seconds
 		else if (mode === 2) {doReset = stat.pendinghr.gte(g.hawkingradiation.mul(g.wormholeAutomatorValue))} // multiply HR by X
 		else if (mode === 3) {doReset = stat.pendinghr.gte(g.hawkingradiation.pow(g.wormholeAutomatorValue))} // power HR by X
+		else if (mode === 4) {doReset = stat.pendinghr.gte((g.previousWormholeRuns.last10.length===0)?c.d0:N(g.previousWormholeRuns.last10[0].gain).mul(g.wormholeAutomatorValue))} // multiply previous HR by X
+		else if (mode === 5) {doReset = stat.pendinghr.gte((g.previousWormholeRuns.last10.length===0)?c.d0:N(g.previousWormholeRuns.last10[0].gain).pow(g.wormholeAutomatorValue))} // power previous HR by X
 		else {
 			if (achievement.ownedInTier(5)>=12) {popup({text:"Due to an error, wormhole automator mode was reverted to the default value of amount of HR."})}
 			g.wormholeAutomatorMode = 0
@@ -962,19 +994,21 @@ function tick(time) {																																		 // The game loop, which 
 	g.wormholeAutomatorValue=d.element("wormholeAutomatorValue").value;
 	if (autobuyers.research.unlockReq() && g.researchAutobuyerOn) researchAutobuyerProgress+=time/autobuyerMeta.interval("research");
 	if (researchAutobuyerProgress > 1) {
-		let bought = false // check if anything was bought
-		if ([0,1].includes(g.researchAutobuyerMode)) { // free research
-			let clock = Date.now()+1000
-			while (true) {
-				let buyable = buyableResearch.filter(x=>(research[x].type==="normal")&&researchCost(x).eq(c.d0)&&availableResearch(researchRow(x),researchCol(x))&&researchConditionsMet(x)&&(x!=="r6_9")&&((research[x].group===undefined)||(g.researchAutobuyerMode===0)))
-				if (buyable.length===0) {break} // if any free research are bought, the buyable research list will update so must repeat
-				if (Date.now()>clock) {error("Infinite Loop");break}
-				for (let i of buyable) {if (researchCost(i).eq(c.d0)) {buySingleResearch(researchRow(i),researchCol(i))}} // check again for research with changing costs
-				updateBuyableResearch()
-				bought=true
-			}
-		} else {g.researchAutobuyerMode=0} // error detection
-		if (bought) {updateResearchTree();generateResearchCanvas()}
+		if (!(achievement.maxForLocks.research.includes(Number(g.achOnProgressBar))&&achievement.locking(g.achOnProgressBar))) {
+			let bought = false // check if anything was bought
+			if (g.researchAutobuyerMode===0) { // free research
+				let clock = Date.now()+1000
+				while (true) {
+					let buyable = buyableResearch.filter(x=>(research[x].type==="normal")&&researchCost(x).eq(c.d0)&&availableResearch(researchRow(x),researchCol(x))&&researchConditionsMet(x)&&(x!=="r6_9")&&((research[x].group===undefined)?true:canAffordAllInResearchGroup(research[x].group)))
+					if (buyable.length===0) {break} // if any free research are bought, the buyable research list will update so must repeat
+					if (Date.now()>clock) {error("Infinite Loop");break}
+					for (let i of buyable) {if (researchCost(i).eq(c.d0)) {buySingleResearch(researchRow(i),researchCol(i))}} // check again for research with changing costs
+					updateBuyableResearch()
+					bought=true
+				}
+			} else {g.researchAutobuyerMode=0} // error detection
+			if (bought) {updateResearchTree();generateResearchCanvas()}
+		}
 		researchAutobuyerProgress%=1;
 	}
 

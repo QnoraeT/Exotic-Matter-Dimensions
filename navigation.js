@@ -36,12 +36,16 @@ const subtabProperties = {
 		axis:{
 			glow:function(){
 				if ((autobuyerMeta.interval("axis")<=0.1)&&g.axisAutobuyerOn) return false;
-				if (g.glowOptions.buyAxis) {for (let i=0;i<12;i++) {if (g.exoticmatter.gt(axisCost(axisCodes[i]))&&(stat.axisUnlocked>i)) {return true}}};
+				if (g.glowOptions.buyAxis) {for (let i=0;i<12;i++) {if (g.exoticmatter.gt(axisCost(axisCodes[i]))&&(stat.axisUnlocked>i)&&Decimal.neq(g[axisCodes[i]+"Axis"],maxAxisForAchievement(i))) {return true}}};
 			}
 		},
 		masteries:{
 			visible:function(){return unlocked("Masteries")},
-			glow:function(){if (g.glowOptions.emptyMasteryRow) {for (let i=1;i<=totalMasteryRows;i++) {if ((g.activeMasteries[i]===0)&&(stat["masteryRow"+i+"Unlocked"])) {return true}}};}
+			glow:function(){if (g.glowOptions.emptyMasteryRow) {
+				if (!(achievement.maxForLocks.mastery.includes(Number(g.achOnProgressBar))&&achievement.locking(g.achOnProgressBar))) {
+					for (let i=1;i<=totalMasteryRows;i++) {if ((g.activeMasteries[i]===0)&&(stat["masteryRow"+i+"Unlocked"])) {return true}}};
+				}
+			}
 		},
 		offlineTime:{
 			glow:function(){return ((timeState===1)&&g.glowOptions.overclock)}
@@ -52,7 +56,7 @@ const subtabProperties = {
 	},
 	stardust:{
 		stardustBoosts:{
-			glow:function(){if (g.glowOptions.buyStardustUpgrade) {for (let i=1;i<6;i++) {if (stat["stardustUpgrade"+i+"Cost"].lt(g.stardust)&&g.stardustUpgrades[i-1]<stat["stardustUpgrade"+i+"Cap"]) {return true}}}}
+			glow:function(){if (g.glowOptions.buyStardustUpgrade&&(!(((achievement.maxForLocks.totalStardustUpgrades[g.achOnProgressBar]??Infinity)===effectiveStardustUpgrades())&&achievement.locking(g.achOnProgressBar)))) {for (let i=1;i<6;i++) {if (stat["stardustUpgrade"+i+"Cost"].lt(g.stardust)&&g.stardustUpgrades[i-1]<stat["stardustUpgrade"+i+"Cap"]) {return true}}}}
 		},
 		stars:{
 			glow:function(){
@@ -163,8 +167,7 @@ const subtabProperties = {
 		}
 	},
 	statistics:{
-		mainStatistics:{},
-		hiddenStatistics:{},
+		statistics:{},
 		largeNumberVisualization:{},
 		statBreakdown:{},
 		previousPrestiges:{
@@ -175,12 +178,14 @@ const subtabProperties = {
 const tabList = Object.keys(subtabProperties)
 const subtabList = Object.fromEntries(Object.entries(subtabProperties).map(x=>[x[0],Object.keys(x[1])]))
 function openSubTab(parentTab,id) {
-	if (debugActive) {
-		if (!Object.keys(subtabList).includes(parentTab)) {error("Could not open subtab of tab \""+parentTab+"\"")}
-		if (!subtabList[parentTab].includes(id)) {error("Could not open subtab \""+id+"\" of tab \""+parentTab+"\"")}
-	}
+	if (!Object.keys(subtabList).includes(parentTab)) {openTab("main");return}
+	if (!subtabList[parentTab].includes(id)) {openSubTab(parentTab,subtabList[parentTab][0]);return}
 	if (StudyE(1)&&(parentTab==="main")&&(id!=="offlineTime")) {
 		notify("This subtab is disabled in Study I","#990000","#ffffff")
+		return
+	}
+	if ((g.activeStudy===10)&&(studyPower(10)===0)&&(parentTab==="wormhole")&&(id!=="studies")) {
+		notify("This subtab is disabled in the Stellar Triad","#990000","#ffffff")
 		return
 	}
 	for (let i of d.class("subtab "+parentTab)) i.style.display="none";

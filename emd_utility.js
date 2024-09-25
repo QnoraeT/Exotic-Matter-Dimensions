@@ -1,11 +1,29 @@
 "use strict";
 var initComplete = false
 const version = {
-	current:"𝕍1.5(c).11",
+	current:"𝕍1ω.13",
 	nextPercentage:function(x=version.nextProgress){return (typeof x === "number")?x:(x.map(i=>version.nextPercentage(i)).sum()/x.length)},
 	percentage:function(){return "["+(this.nextPercentage()*100).toFixed(0)+"%]"},
-	nextProgress:[0.99],
-	nextUpdateHint:"Cursed research of the N axis",
+	nextProgress:[
+		0.25,0.25,       // Level 9 balance
+		1,       // Level 9 code
+		0,0,0,     // Level 10 balance
+		0,         // Realmstone code (basic)
+		0,         // Realmstone code (special)
+		0,         // Lifeblood code
+		0,         // Space code
+		0,         // Time code
+		0,         // Celestial 1 balance
+		0,         // Celestial 1 code
+		0,         // Celestial 2 balance
+		0,         // Celestial 2 code
+		0,         // Celestial 3 balance
+		0,         // Celestial 3 code
+		0,         // Celestial 4 balance
+		0,         // Celestial 4 code
+		0,0,0,0,0,0,0,0,0,0  // Interface fix
+	],
+	nextUpdateHint:"Machine medicine",
 }
 /*
 	e event message
@@ -32,11 +50,15 @@ function notify(text,backgroundColor="#"+Math.floor(Math.random()*16777216).toSt
 }
 function error(text) {
 	halt()
-	popup({text:"Error: "+text+".<br>Please tell alemaninc about this and give him this output:<textarea style=\"width:calc(100% - 32px)\">"+(new Error().stack)+"</textarea><br><table style=\"table-layout:fixed;width:calc(100% - 32px)\"><colgroup><col style=\"width:50%\"></col><col style=\"width:50%\"></col></colgroup><tr><td>Savefile before error:</td><td>Savefile at start of session:</td></tr><tr><td><textarea id=\"span_fancyPopupInput\" style=\"width:100%\">"+btoa(localStorage.getItem("save"))+"</textarea></td><td><textarea id=\"span_fancyPopupInput\" style=\"width:100%\">"+savePreLoad+"</textarea><td></tr></table><br><a href=\""+discordInvite+"\" target=\"_blank\">Discord</a>",buttons:[]})
-	error = function(){/* if multiple errors are thrown in a chain, only the first appears */}
+	popup({text:"Error: "+text+".<br>Please tell alemaninc about this and give him a console output.<br><table style=\"table-layout:fixed;width:calc(100% - 32px)\"><colgroup><col style=\"width:50%\"></col><col style=\"width:50%\"></col></colgroup><tr><td>Savefile before error:</td><td>Savefile at start of session:</td></tr><tr><td><textarea id=\"span_fancyPopupInput\" style=\"width:100%\">"+btoa(localStorage.getItem("save"))+"</textarea></td><td><textarea id=\"span_fancyPopupInput\" style=\"width:100%\">"+savePreLoad+"</textarea><td></tr></table><br><a href=\""+discordInvite+"\" target=\"_blank\">Discord</a>",buttons:[]})
+	console.error()
 }
 const debug = {
-	stats: function(){for(let i of statOrder){try{updateStat(i)}catch{console.log(i)}}},
+	scoreUnclassifiedSave:function(){
+		let d = new Date()
+		return "U_"+((d.getUTCMonth()+1)*5000000+d.getUTCDate()*100000+d.getUTCHours()*3600+d.getUTCMinutes()*60+d.getUTCSeconds())
+	},
+	stats: function(){for(let i of statOrder){try{updateStat(i)}catch{console.error(i)}}},
 	secretAchievementDistribution: function(){
 		let out = Array(7).fill(0)
 		for (let i of Object.values(secretAchievementList).map(x=>x.rarity)) out[i-1]++
@@ -45,13 +67,13 @@ const debug = {
 	addResearch:function(x){
 		g.research=x
 		if (!g.researchVisibility.includes(x)) g.researchVisibility.push(x)
-	}
+	},
 }
 var savecounter=0;
 
-Decimal.prototype.fix = function(x) {									 // If the input is not a number, returns x. The recommendation is to input the identity of that variable, so 0 if it gets added to something else or 1 if it gets multiplied or is an exponent or tetration height.
+Decimal.prototype.fix = function(x,crash=true) {									 // If the input is not a number, returns x. The recommendation is to input the identity of that variable, so 0 if it gets added to something else or 1 if it gets multiplied or is an exponent or tetration height.
 	if (this.isNaN()) {
-		error("A NaN error nearly occurred, but got flagged by alemaninc's systems")
+		if (crash) {error("A NaN error nearly occurred, but got flagged by alemaninc's systems")}
 		return N(x)
 	} else {
 		return this
@@ -75,16 +97,16 @@ function popup(data) {
 	d.innerHTML("span_fancyPopupText",data.text)
 	if (data.input !== undefined) d.element("span_fancyPopupText").innerHTML += "<br><textarea id=\"span_fancyPopupInput\" style=\"width:90%;height:40%\">"+data.input+"</textarea>"
 	d.innerHTML("span_fancyPopupButtons","")
-	for (let i of (data.buttons??[["Close",""]])) d.element("span_fancyPopupButtons").innerHTML += "<button onClick=\"hidePopup();"+i[1]+"\" class=\"genericbutton\">"+i[0]+"</button>"
+	for (let i of (data.buttons??[["Close",""]])) d.element("span_fancyPopupButtons").innerHTML += "<button onClick=\"hidePopup();"+i[1]+"\" class=\"genericbutton size"+(data.buttonSize??3)+"\">"+i[0]+"</button>"
 }
 function hidePopup() {
 	d.display('div_fancyPopupScreen','none')
 	newsSupport.readMoreIteration=0
 }
 function popupInput() {return d.element("span_fancyPopupInput").value}
-function functionError(functionName,argumentList) {error("Cannot access "+functionName+"("+Object.values(argumentList).map(x=>JSON.stringify(x)).join(",")+")")}
+function functionError(functionName,argumentList) {error("Cannot access <code>"+functionName+"("+Object.values(argumentList).map(x=>JSON.stringify(x)).join(",")+")</code>")}
 function textFormat(text,className){return "<span class=\"big "+className+"\">"+text+"</span>"}
-function BEformat(value,precision=0,highPrecision=2) {return gformat(value,precision,g.notation,g.notation,highPrecision).replaceAll(" ","&nbsp;");}
+function BEformat(value,precision=0,highPrecision=0) {return gformat(value,precision,g.notation,g.notation,highPrecision).replaceAll(" ","&nbsp;");}
 function timeFormat(x) {
 	x = N(x);
 	if (x.eq(constant.d0)) return "0 seconds";
@@ -101,7 +123,7 @@ function timeFormat(x) {
 	if (x.lt(constant.d3600)) return x.div(constant.d60).digits(2)+":"+x.mod(constant.d60).digits(2);
 	if (x.lt(constant.d86400)) return x.div(constant.d3600).digits(2)+":"+x.div(constant.d60).mod(constant.d60).digits(2)+":"+x.mod(constant.d60).digits(2);
 	if (x.lt(constant.e9)) return x.div(constant.d86400).floor()+" day"+(x.gte(constant.d172800)?"s":"")+" "+x.div(constant.d3600).mod(constant.d24).digits(2)+":"+x.div(constant.d60).mod(constant.d60).digits(2)+":"+x.mod(constant.d60).digits(2);
-	return BEformat(x.div(constant.d31556926),2)+" years";
+	return BEformat(x.div(constant.d31556926),0)+" years";
 }
 function rateFormat(x) {
 	x = N(x);
@@ -193,6 +215,7 @@ const c = deepFreeze({		 // c = "constant"
 	d0_08			: Decimal.FC_NN(1,0,0.08),
 	d0_0816		: Decimal.FC_NN(1,0,0.0816),
 	d0_085		: Decimal.FC_NN(1,0,0.085),
+	d0_09			: Decimal.FC_NN(1,0,0.09),
 	d0_1			: Decimal.FC_NN(1,0,0.1),
 	d1div9		: Decimal.FC_NN(1,0,1/9), // 0.111
 	d0_12			: Decimal.FC_NN(1,0,0.12),
@@ -239,11 +262,11 @@ const c = deepFreeze({		 // c = "constant"
 	d1_025		: Decimal.FC_NN(1,0,1.025),
 	d1_026		: Decimal.FC_NN(1,0,1.026),
 	d1_03			: Decimal.FC_NN(1,0,1.03),
-	d1_0369		: Decimal.FC_NN(1,0,1.0369),
 	d1_04			: Decimal.FC_NN(1,0,1.04),
 	d1_05			: Decimal.FC_NN(1,0,1.05),
 	d1_06			: Decimal.FC_NN(1,0,1.06),
 	d1_08			: Decimal.FC_NN(1,0,1.08),
+	d1_0936		: Decimal.FC_NN(1,0,1.0936),
 	d1_1			: Decimal.FC_NN(1,0,1.1),
 	d10div9		: Decimal.FC_NN(1,0,10/9), // 1.111
 	d1_12			: Decimal.FC_NN(1,0,1.12),
@@ -370,6 +393,7 @@ const c = deepFreeze({		 // c = "constant"
 	d44444		: Decimal.FC_NN(1,0,44444),
 	d5e4			: Decimal.FC_NN(1,0,5e4),
 	e5				: Decimal.FC_NN(1,0,1e5),
+	d362880		: Decimal.FC_NN(1,0,362880),
 	d696342		: Decimal.FC_NN(1,0,696342),
 	d1_5e6		: Decimal.FC_NN(1,0,1.5e6),
 	e7				: Decimal.FC_NN(1,0,1e7),
